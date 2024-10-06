@@ -1,6 +1,10 @@
 Dataset/
 runs/
 *.pt
+ReinforcementLearning/images/*
+ReinforcementLearning/logs/*
+ReinforcementLearning/models/*
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
