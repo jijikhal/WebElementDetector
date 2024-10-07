@@ -24,7 +24,7 @@ class AnnotatorEnv(gym.Env):
 
         self.action_space = spaces.Box(low=0, high=np.array([1.0, 1.0, 1.0, 1.0]), shape=(4,), dtype=np.float32)
 
-        self.observation_space = spaces.Box(low=0, high=255, shape=(height, width), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
 
     def reset(self, seed = None, options = None):
         super().reset(seed=seed)
@@ -39,9 +39,9 @@ class AnnotatorEnv(gym.Env):
     
     def step(self, action):
         self.steps += 1
-        x1, y1, x2, y2 = float(action[0]), float(action[1]), float(action[2]), float(action[3])
-        target_reached = self.annotator.perform_action(x1, y1, x2, y2)
-        reward = abs(x1-x2)*abs(y1-y2)
+        x, y, w, h = float(action[0]), float(action[1]), float(action[2]), float(action[3])
+        target_reached = self.annotator.perform_action(x, y, w, h)
+        reward = min(x*2, (1-x)*2, w)*min(y*2, (1-y)*2, h)
         terminated = False
         stoped = self.steps >= 10
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     env = gym.make('annotator-v0', render_mode='human')
 
     print("check begin")
-    #check_env(env.unwrapped)
+    check_env(env.unwrapped)
     print("check end")
 
     obs = env.reset()[0]

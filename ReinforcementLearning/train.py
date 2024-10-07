@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import pickle
-from stable_baselines3 import A2C
+from stable_baselines3 import SAC, A2C
 import os
 import annotator_env
 
@@ -15,7 +15,7 @@ def train():
 
     env = gym.make('annotator-v0')
 
-    model = A2C('MlpPolicy', env, verbose=True, tensorboard_log=log_dir)
+    model = A2C('MlpPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
 
     TIMESTEPS = 1000
     iters = 0
