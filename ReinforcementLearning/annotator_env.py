@@ -13,7 +13,7 @@ register(
 
 class AnnotatorEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps':1} 
-    def __init__(self, height: int = 270, width: int = 480, folder: str = "images", render_mode=None) -> None:
+    def __init__(self, height: int = 100, width: int = 100, folder: str = "images", render_mode=None) -> None:
         super().__init__()
         self.height = height
         self.width = width
@@ -40,8 +40,7 @@ class AnnotatorEnv(gym.Env):
     def step(self, action):
         self.steps += 1
         x, y, w, h = float(action[0]), float(action[1]), float(action[2]), float(action[3])
-        target_reached = self.annotator.perform_action(x, y, w, h)
-        reward = min(x*2, (1-x)*2, w)*min(y*2, (1-y)*2, h)
+        reward = self.annotator.perform_action(x, y, w, h)
         terminated = False
         stoped = self.steps >= 10
 

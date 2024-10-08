@@ -15,7 +15,7 @@ def train():
 
     env = gym.make('annotator-v0')
 
-    model = A2C('MlpPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
+    model = A2C('CnnPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
 
     TIMESTEPS = 1000
     iters = 0
