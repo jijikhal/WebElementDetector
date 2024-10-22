@@ -3,9 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import pickle
-from stable_baselines3 import SAC, A2C
+from stable_baselines3 import SAC, PPO
 import os
 import annotator_env
+from stable_baselines3.common.vec_env import SubprocVecEnv
 
 def train():
     model_dir = "models"
@@ -13,9 +14,10 @@ def train():
     os.makedirs(model_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
 
-    env = gym.make('annotator-v0')
+    #env = gym.make('annotator-v0')
+    env = SubprocVecEnv([lambda: gym.make('annotator-v0') for i in range(8)])
 
-    model = A2C('CnnPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
+    model = PPO('MlpPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
 
     TIMESTEPS = 1000
     iters = 0
@@ -30,7 +32,7 @@ def test_sb3(render=True):
     env = gym.make('annotator-v0', render_mode='human' if render else None)
 
     # Load model
-    model = A2C.load('models/a2c', env=env)
+    model = PPO.load('models/a2c', env=env)
 
     # Run a test
     obs = env.reset()[0]
