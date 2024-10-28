@@ -3,36 +3,47 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import pickle
-from stable_baselines3 import SAC, PPO
+from stable_baselines3 import SAC, PPO, A2C
 import os
 import annotator_env
+import square_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
+import datetime
+from stable_baselines3.common.callbacks import EvalCallback, CheckpointCallback
+
+ENV = 'square-v0'
 
 def train():
-    model_dir = "models"
-    log_dir = "logs"
-    os.makedirs(model_dir, exist_ok=True)
+    log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     os.makedirs(log_dir, exist_ok=True)
 
-    #env = gym.make('annotator-v0')
-    env = SubprocVecEnv([lambda: gym.make('annotator-v0') for i in range(8)])
+    best_model_path = os.path.join(log_dir, "best_model")
 
-    model = PPO('MlpPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
+    env = gym.make(ENV)
+    #env = SubprocVecEnv([lambda: gym.make('annotator-v0') for i in range(8)])
 
-    TIMESTEPS = 1000
-    iters = 0
-    while True:
-        iters += 1
-        model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False) # train
-        model.save(f"{model_dir}/a2c") # Save a trained model every TIMESTEPS
+    model = PPO('CnnPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
+
+    eval_callback = EvalCallback(
+        env,
+        best_model_save_path=best_model_path,
+        log_path=log_dir,
+        eval_freq=10000,  # Evaluate every 10000 steps
+        deterministic=True,
+        render=False,
+        n_eval_episodes=5,
+        verbose=1
+    )
+
+    model.learn(total_timesteps=1000000, callback=eval_callback)
 
 # Test using StableBaseline3. Lots of hardcoding for simplicity.
 def test_sb3(render=True):
 
-    env = gym.make('annotator-v0', render_mode='human' if render else None)
+    env = gym.make(ENV, render_mode='human' if render else None)
 
     # Load model
-    model = PPO.load('models/a2c', env=env)
+    model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\03 movingRectDifferentSizesMLP\best_model\best_model.zip", env=env)
 
     # Run a test
     obs = env.reset()[0]
@@ -43,6 +54,8 @@ def test_sb3(render=True):
         obs, reward, terminated, _, _ = env.step(action)
 
         print(reward)
+        
+        obs = env.reset()[0]
 
         if terminated:
             break
