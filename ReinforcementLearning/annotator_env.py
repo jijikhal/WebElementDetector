@@ -4,7 +4,7 @@ from gymnasium.envs.registration import register
 from gymnasium.utils.env_checker import check_env
 from annotator import Annotator
 import numpy as np
-from annotator import RectF, RectI, BoundingBox
+from bounding_box import BoundingBox, RectF, RectI
 import cv2
 # https://www.youtube.com/watch?v=AoGRjPt-vms
 
@@ -48,7 +48,7 @@ class AnnotatorEnv(gym.Env):
         ih, iw = self.height, self.width
 
         bb = BoundingBox(rect, True)
-        x, y, w, h = bb.get_rect()
+        x, y, w, h = bb.get_rect(self.width, self.height)
         
         if (w < 5 or h < 5):
             return -100, False

@@ -1,12 +1,14 @@
 import gymnasium as gym
 from gymnasium import spaces
 from gymnasium.envs.registration import register
-from gymnasium.utils.env_checker import check_env
-from annotator import RectF, RectI, BoundingBox
+from bounding_box import BoundingBox, RectF, RectI
 import numpy as np
 import cv2
+from cv2.typing import MatLike
 import math
 from random import uniform
+from stable_baselines3.common.env_checker import check_env
+from gymnasium.wrappers import RescaleAction
 # https://www.youtube.com/watch?v=AoGRjPt-vms
 
 register(
@@ -15,14 +17,14 @@ register(
 )
 
 class SquareEnv(gym.Env):
-    metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps':1} 
+    metadata = {'render_modes': ['human'], 'render_fps':1} 
     def __init__(self, height: int = 100, width: int = 100, render_mode=None) -> None:
         super().__init__()
-        self.height = height
-        self.width = width
+        self.height: int = height
+        self.width: int = width
         self.render_mode = render_mode
-        self.steps = 0
-        self.img = None
+        self.steps: int = 0
+        self.img: MatLike = None
         self.bb: BoundingBox = None
 
         self.action_space = spaces.Box(low=0, high=np.array([1.0, 1.0, 1.0, 1.0]), shape=(4,), dtype=np.float32)
@@ -34,7 +36,7 @@ class SquareEnv(gym.Env):
         self.steps = 0
         self.img = np.zeros((self.height, self.width), np.uint8)
         self.bb = BoundingBox((uniform(0.3, 0.7), uniform(0.3, 0.7), uniform(0.1, 0.3), uniform(0.1, 0.3)), True)
-        x, y, w, h = self.bb.get_rect()
+        x, y, w, h = self.bb.get_rect(self.height, self.width)
         self.img[y:y+h, x:x+w] = 255
         self.img = np.expand_dims(self.img, axis=0)
 
@@ -63,7 +65,7 @@ class SquareEnv(gym.Env):
         bb = BoundingBox((x, y, w, h), True)
         reward, terminated = self.calculate_reward((x, y, w, h))
         stoped = self.steps >= 10
-        x, y, w, h = bb.get_rect()
+        x, y, w, h = bb.get_rect(self.height, self.width)
         #self.img[0][y:y+h, x:x+w] = 120
 
         obs = self.img
@@ -76,15 +78,17 @@ class SquareEnv(gym.Env):
     
     def render(self):
         cv2.imshow("test", self.img[0])
-        cv2.waitKey(0)
+        cv2.waitKey(10)
 
 
 if __name__ == "__main__":
     env = gym.make('square-v0', render_mode='human')
+    env = RescaleAction(env, -1, 1)
+    
 
-    #print("check begin")
-    #check_env(env.unwrapped)
-    #print("check end")
+    print("check begin")
+    check_env(env)
+    print("check end")
 
     obs = env.reset()[0]
 

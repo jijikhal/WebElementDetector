@@ -1,4 +1,5 @@
 import gymnasium as gym
+from gymnasium.wrappers import RescaleAction
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -9,7 +10,7 @@ import annotator_env
 import square_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import datetime
-from stable_baselines3.common.callbacks import EvalCallback, CheckpointCallback
+from stable_baselines3.common.callbacks import EvalCallback
 
 ENV = 'square-v0'
 
@@ -20,7 +21,8 @@ def train():
     best_model_path = os.path.join(log_dir, "best_model")
 
     env = gym.make(ENV)
-    #env = SubprocVecEnv([lambda: gym.make('annotator-v0') for i in range(8)])
+    env = RescaleAction(env, -1, 1)
+    #env = SubprocVecEnv([lambda: gym.make(ENV) for i in range(8)])
 
     model = PPO('CnnPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
 
@@ -63,5 +65,5 @@ def test_sb3(render=True):
 if __name__ == '__main__':
 
     # Train/test using StableBaseline3
-    #train()
-    test_sb3()
+    train()
+    #test_sb3()
