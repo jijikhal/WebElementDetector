@@ -4,7 +4,7 @@ from os import listdir
 from os.path import isfile, join
 import numpy as np
 from cv2.typing import MatLike
-from bounding_box import BoundingBox, RectF, RectI
+from bounding_box import BoundingBox, RectF, RectI, BoundingBoxType
 
 class Annotator:
     def __init__(self, height: int, width: int, folder: str = "images") -> None:
@@ -12,7 +12,7 @@ class Annotator:
         global IMG_WIDTH
         IMG_HEIGHT = height
         IMG_WIDTH = width
-        self.img: MatLike = None
+        self.img: MatLike
         self.files = [join(folder, f) for f in listdir(folder) if isfile(join(folder, f))]
         self.reset()
 
@@ -35,7 +35,7 @@ class Annotator:
         if (y + h/2 > 1 or y < h/2):
             h = min(y*2, (1-y)*2)
 
-        bb = BoundingBox((x,y,w,h), True)
+        bb = BoundingBox((x,y,w,h), BoundingBoxType.CENTER)
 
         cv.rectangle(self.img[0], bb.get_rect(self.img[0].shape[1], self.img[0].shape[0]), (255,), -1)
     
