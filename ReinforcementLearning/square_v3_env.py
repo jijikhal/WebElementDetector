@@ -84,7 +84,7 @@ class SquareEnv(gymnasium.Env):
         x, y, w, h = bb.get_rect(self.height, self.width)
 
         # Uncomment the following line to see the guess
-        #self.img[0][y:y+h, x:x+w] = 120
+        self.img[0][y:y+h, x:x+w] = 120
 
         obs = self.img
         info = {}
@@ -93,11 +93,13 @@ class SquareEnv(gymnasium.Env):
             print("boxes:", len(self.bb))
             self.render()
 
+        self.img[0][y:y+h, x:x+w] = 0
+
         return obs, reward, terminated, stoped, info
     
     def render(self):
         cv2.imshow("square-v3 render", self.img[0])
-        cv2.waitKey(100)
+        cv2.waitKey(0)
 
 
 if __name__ == "__main__":

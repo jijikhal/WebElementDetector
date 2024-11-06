@@ -2,11 +2,10 @@ import gymnasium as gym
 from gymnasium.wrappers.rescale_action import RescaleAction
 import numpy as np
 import matplotlib.pyplot as plt
-import random
-import pickle
 from stable_baselines3 import SAC, PPO, A2C
 import os
 import annotator_env
+import square_v2_env
 import square_v3_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import datetime
@@ -25,7 +24,8 @@ def train():
     # Observation space normalization is done by SB3 for CNN
     #env = SubprocVecEnv([lambda: gym.make(ENV) for i in range(8)])
 
-    model = PPO('CnnPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
+    #model = PPO('CnnPolicy', env, verbose=True, tensorboard_log=log_dir, device='cuda')
+    model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v2CNNnew\best_model\best_model.zip", env=env)
 
     eval_callback = EvalCallback(
         env,
@@ -40,31 +40,5 @@ def train():
 
     model.learn(total_timesteps=1000000, callback=eval_callback)
 
-# Test using StableBaseline3. Lots of hardcoding for simplicity.
-def test_sb3(render=True):
-
-    env = gym.make(ENV, render_mode='human' if render else None)
-
-    # Load model
-    model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\03 movingRectDifferentSizesMLP\best_model\best_model.zip", env=env)
-
-    # Run a test
-    obs = env.reset()[0]
-    terminated = False
-    while True:
-        action, _ = model.predict(observation=obs, deterministic=False) # Turn on deterministic, so predict always returns the same behavior
-        print(action)
-        obs, reward, terminated, _, _ = env.step(action)
-
-        print(reward)
-        
-        obs = env.reset()[0]
-
-        if terminated:
-            break
-
 if __name__ == '__main__':
-
-    # Train/test using StableBaseline3
     train()
-    #test_sb3()
