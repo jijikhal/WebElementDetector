@@ -53,14 +53,13 @@ def calculate_reward(img, rect: Rect):
 
 
         print(f"Distance to closest white pixel from edges:")
-        print(f"  Top edge: {top_dist:f}")
+        print(f"  Top edge: {top_dist}")
         print(f"  Bottom edge: {bottom_dist}")
         print(f"  Left edge: {left_dist}")
         print(f"  Right edge: {right_dist}")
 
     print(f"Reward is: {total_reward}")
-    print(time()-start)
-    print(w*h/(iw*ih) > 0.9)
+    print("Should terminate?", w*h/(iw*ih) > 0.9)
 
     #cv2.waitKey(0)
     #cv2.destroyWindow("cutout")
@@ -84,7 +83,7 @@ def draw_circle(event,x,y,flags,param):
             last_y = -1
     
 if __name__ == "__main__":
-    img = cv2.imread("images/python.jpg")
+    img = cv2.imread("images/python.png")
     img = cv2.Canny(img, 50, 150)
     img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, np.ones((5,5)))
     contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
