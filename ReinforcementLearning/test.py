@@ -5,7 +5,7 @@ import annotator_env
 import square_v3_env
 
 ENV = 'square-v3'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20241030-223057\best_model\best_model.zip"
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v3BiggerNet\best_model\best_model.zip"
 
 def test(render=True):
 

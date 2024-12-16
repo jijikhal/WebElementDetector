@@ -36,7 +36,7 @@ class SquareEnv(gymnasium.Env):
 
         self.img = np.zeros((self.height, self.width), np.uint8)
         self.bb = BoundingBox((uniform(0.1, 0.9), uniform(0.1, 0.9), 0.1, 0.1), BoundingBoxType.CENTER)
-        x, y, w, h = self.bb.get_rect(self.height, self.width)
+        x, y, w, h = self.bb.get_rect(self.width, self.height)
         self.img[y:y+h, x:x+w] = 255
         # Convert to channel-first format. See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
         self.img = np.expand_dims(self.img, axis=0)
@@ -66,7 +66,7 @@ class SquareEnv(gymnasium.Env):
         bb = BoundingBox((x, y, w, h), BoundingBoxType.CENTER)
         reward, terminated = self.calculate_reward((x, y, w, h))
         stoped = self.steps >= 1
-        x, y, w, h = bb.get_rect(self.height, self.width)
+        x, y, w, h = bb.get_rect(self.width, self.height)
 
         # Uncomment the following line to see the guess
         #self.img[0][y:y+h, x:x+w] = 120
@@ -81,7 +81,7 @@ class SquareEnv(gymnasium.Env):
     
     def render(self):
         cv2.imshow("square-v1 render", self.img[0])
-        cv2.waitKey(10)
+        cv2.waitKey(0)
 
 
 if __name__ == "__main__":

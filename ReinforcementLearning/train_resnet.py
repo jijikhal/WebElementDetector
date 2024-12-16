@@ -1,11 +1,12 @@
 import gymnasium as gym
-from gymnasium.wrappers import RescaleAction
+from gymnasium.wrappers.rescale_action import RescaleAction
+from gymnasium.wrappers.normalize import NormalizeObservation
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import SAC, PPO, A2C
 from stable_baselines3.common.policies import ActorCriticPolicy
 import os
-import square_v4_env
+import square_v6_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import datetime
 from stable_baselines3.common.callbacks import EvalCallback
@@ -36,12 +37,11 @@ class PretrainedResNetFeatureExtractor(BaseFeaturesExtractor):
         # Remove the final fully connected layer (classifier)
         self.feature_extractor = nn.Sequential(*list(resnet.children())[:-1])  # Retain all layers except the last one
         
-        # Freeze ResNet weights (optional: comment out if fine-tuning is needed)
-        for param in self.feature_extractor.parameters():
-            param.requires_grad = False
-        
-        # Output dimension (from ResNet last conv layer)
-        self._features_dim = output_dim
+        with torch.no_grad():
+            dummy_input = torch.zeros(1, *observation_space.shape)  # Assuming shape is (C, H, W)
+            dummy_output = self.feature_extractor(self.grayscale_to_rgb(dummy_input))
+            self._features_dim = int(torch.prod(torch.tensor(dummy_output.shape[1:])))
+            print("size", int(torch.prod(torch.tensor(dummy_output.shape[1:]))), observation_space.shape)
 
     def forward(self, observations):
         # Assuming input is a 3D tensor (C x H x W)
@@ -57,7 +57,7 @@ class CustomPPOPolicy(ActorCriticPolicy):
             features_extractor_kwargs=dict(output_dim=512),
         )
 
-ENV = 'square-v4'
+ENV = 'square-v6'
 
 def train():
     log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -67,6 +67,7 @@ def train():
 
     env = gym.make(ENV)
     env = RescaleAction(env, min_action=-1, max_action=1) # Normalize Action space
+    #env = NormalizeObservation(env)
     # Observation space normalization is done by SB3 for CNN
     #env = SubprocVecEnv([lambda: gym.make(ENV) for i in range(8)])
 
@@ -75,8 +76,9 @@ def train():
     )
 
     model = PPO(CustomPPOPolicy, env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda')
-    #model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v2CNNnew\best_model\best_model.zip", env=env)
+    #model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20241215-205700\best_model\best_model.zip", env=env)
     print(model.policy)
+    print(sum(p.numel() for p in model.policy.parameters()))
 
     eval_callback = EvalCallback(
         env,
@@ -89,7 +91,7 @@ def train():
         verbose=1
     )
 
-    model.learn(total_timesteps=1000000, callback=eval_callback)
+    #model.learn(total_timesteps=10000000, callback=eval_callback)
 
 if __name__ == '__main__':
     train()

@@ -8,7 +8,7 @@ from cv2.typing import MatLike
 import math
 from random import uniform
 from stable_baselines3.common.env_checker import check_env
-from gymnasium.wrappers import RescaleAction
+from gymnasium.wrappers.rescale_action import RescaleAction
 
 register(
     id='square-v4',
@@ -63,7 +63,7 @@ class SquareEnv(gymnasium.Env):
             new_bb = BoundingBox((xr, yr, wr, hr), BoundingBoxType.CENTER)
             if (not any([x.has_overlap(new_bb) for x in self.bb])):
                 self.bb.append(new_bb)
-                bb = new_bb.get_rect(self.height, self.width)
+                bb = new_bb.get_rect(self.width, self.height)
                 shape = np.random.randint(0, 3)
                 if (shape == 0):
                     draw_rect(bb, self.img)
@@ -98,7 +98,7 @@ class SquareEnv(gymnasium.Env):
         total_reward = max([x.intersection_over_union(bb) for x in intersecting])
 
         for i in intersecting:
-            x, y, w, h = i.get_rect(self.height, self.width)
+            x, y, w, h = i.get_rect(self.width, self.height)
             self.img[0] [y:y+h, x:x+w] = 0
             self.bb.remove(i)
 
@@ -110,7 +110,7 @@ class SquareEnv(gymnasium.Env):
         bb = BoundingBox((x, y, w, h), BoundingBoxType.CENTER)
         reward, terminated = self.calculate_reward((x, y, w, h))
         stoped = self.steps <= 0
-        x, y, w, h = bb.get_rect(self.height, self.width)
+        x, y, w, h = bb.get_rect(self.width, self.height)
 
         # Uncomment the following line to see the guess
         self.img[0][y:y+h, x:x+w] = 120

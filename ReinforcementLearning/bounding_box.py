@@ -50,6 +50,9 @@ class BoundingBox:
             self.w = abs(x1-x2)
             self.h = abs(y1-y2)
 
+    def __repr__(self) -> str:
+        return f"<BoundingBox: ({self.x}, {self.y}, {self.w}, {self.h})>"
+
     def get_bb_middle(self) -> RectF:
         """
         Returns a bounding box in the following format:
@@ -82,6 +85,10 @@ class BoundingBox:
 
         return x1 <= x2 and y1 <= y2 and x1+w1 >= x2+w2 and y1+h1 >= y2+h2
     
+    def area(self) -> float:
+        _, _, w, h = self.get_bb_tl()
+        return w*h
+    
     def is_intersecting(self, other: 'BoundingBox') -> bool:
         x1, y1, w1, h1 = self.get_bb_tl()
         x2, y2, w2, h2 = other.get_bb_tl()
@@ -96,13 +103,15 @@ class BoundingBox:
         
         return True
     
-    def has_overlap(self, other: 'BoundingBox') -> bool:
+    def overlap(self, other: 'BoundingBox') -> float:
         x1, y1, w1, h1 = self.get_bb_tl()
         x2, y2, w2, h2 = other.get_bb_tl()
         x, y = max(x1, x2), max(y1, y2)
         xd, yd = min(x1+w1, x2+w2), min(y1+h1, y2+h2)
-        overlap = max(0, xd-x)*max(0, yd-y)
-        return overlap > 0.0001
+        return max(0, xd-x)*max(0, yd-y)
+    
+    def has_overlap(self, other: 'BoundingBox') -> bool:
+        return self.overlap(other) > 0.0001
     
     def intersection_over_union(self, other: 'BoundingBox') -> float:
         x1, y1, w1, h1 = self.get_bb_tl()

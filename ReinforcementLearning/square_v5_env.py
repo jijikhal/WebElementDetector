@@ -1,6 +1,7 @@
 import gymnasium
 from gymnasium import spaces
 from gymnasium.envs.registration import register
+from sklearn.utils import resample
 from bounding_box import BoundingBox, RectF, RectI, BoundingBoxType
 import numpy as np
 import cv2
@@ -11,9 +12,31 @@ from stable_baselines3.common.env_checker import check_env
 from gymnasium.wrappers.rescale_action import RescaleAction
 
 register(
-    id='square-v3',
-    entry_point='square_v3_env:SquareEnv'
+    id='square-v5',
+    entry_point='square_v5_env:SquareEnv'
 )
+
+def draw_triangle(bb: RectI, image: MatLike) -> None:
+    x, y, w, h = bb
+    side = np.random.randint(0, 4)
+    if side == 0:
+        points = np.array([(x+w//2, y), (x+w-1, y+h-1), (x, y+h-1)])
+    elif side == 1:
+        points = np.array([(x+w-1, y+h//2), (x, y+h-1), (x, y)])
+    elif side == 2:
+        points = np.array([(x+w//2, y+h-1), (x+w-1, y), (x, y)])
+    else:
+        points = np.array([(x, y+h//2), (x+w-1, y+h-1), (x+w-1, y)])
+    cv2.drawContours(image, [points], 0, (255,), 1)
+
+def draw_rect(bb: RectI, image: MatLike) -> None:
+    x, y, w, h = bb
+    cv2.rectangle(image, (x, y), (x+w-1, y+h-1), (255,), 1)
+
+def draw_ellipse(bb: RectI, image: MatLike) -> None:
+    x, y, w, h = bb
+    cv2.ellipse(image, (x+w//2, y+h//2), (w//2-1, h//2-1), 0, 0, 360, (255,), 1)
+
 
 class SquareEnv(gymnasium.Env):
     metadata = {'render_modes': ['human'], 'render_fps':1} 
@@ -41,8 +64,15 @@ class SquareEnv(gymnasium.Env):
             new_bb = BoundingBox((xr, yr, wr, hr), BoundingBoxType.CENTER)
             if (not any([x.has_overlap(new_bb) for x in self.bb])):
                 self.bb.append(new_bb)
-                x, y, w, h = new_bb.get_rect(self.width, self.height)
-                self.img[y:y+h, x:x+w] = 255
+                bb = new_bb.get_rect(self.width, self.height)
+                shape = np.random.randint(0, 3)
+                if (shape == 0):
+                    draw_rect(bb, self.img)
+                elif (shape == 1):
+                    draw_ellipse(bb, self.img)
+                else:
+                    draw_triangle(bb, self.img)
+
 
         self.steps = len(self.bb)
         
@@ -98,12 +128,12 @@ class SquareEnv(gymnasium.Env):
         return obs, reward, terminated, stoped, info
     
     def render(self):
-        cv2.imshow("square-v3 render", self.img[0])
+        cv2.imshow("square-v5 render", self.img[0])
         cv2.waitKey(0)
 
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v3', render_mode='human')
+    env = gymnasium.make('square-v5', render_mode='human')
     env = RescaleAction(env, -1, 1)
 
     print("check begin")

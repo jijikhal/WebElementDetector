@@ -7,6 +7,7 @@ import os
 import annotator_env
 import square_v2_env
 import square_v3_env
+import square_v4_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import datetime
 from stable_baselines3.common.callbacks import EvalCallback
@@ -49,11 +50,11 @@ class CustomCNN(BaseFeaturesExtractor):
         return self.linear(self.cnn(observations))
 
 
-ENV = 'square-v3'
+ENV = 'square-v4'
 
 def train():
     log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    os.makedirs(log_dir, exist_ok=True)
+    #os.makedirs(log_dir, exist_ok=True)
 
     best_model_path = os.path.join(log_dir, "best_model")
 
@@ -69,8 +70,9 @@ def train():
     )
 
     model = PPO('CnnPolicy', env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda')
-    #model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v2CNNnew\best_model\best_model.zip", env=env)
+    #model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v3BiggerNet\best_model\best_model.zip", env=env)
     print(model.policy)
+    print(sum(p.numel() for p in model.policy.parameters()))
 
     eval_callback = EvalCallback(
         env,
@@ -83,7 +85,7 @@ def train():
         verbose=1
     )
 
-    model.learn(total_timesteps=1000000, callback=eval_callback)
+    #model.learn(total_timesteps=10000000, callback=eval_callback)
 
 if __name__ == '__main__':
     train()
