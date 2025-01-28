@@ -76,7 +76,7 @@ class BoundingBox:
         """
         return (int(self.x*img_width), int(self.y*img_height), int(self.w*img_width), int(self.h*img_height))
 
-    def is_fully_inside(self, other: 'BoundingBox') -> bool:
+    def fully_contains(self, other: 'BoundingBox') -> bool:
         """
         Returns whether `other` bounding box is completaly within this bounding box.
         """
@@ -98,7 +98,7 @@ class BoundingBox:
         if y1 + h1 <= y2 or y2 + h2 <= y1:
             return False
         
-        if (self.is_fully_inside(other) or other.is_fully_inside(self)):
+        if (self.fully_contains(other) or other.fully_contains(self)):
             return False
         
         return True

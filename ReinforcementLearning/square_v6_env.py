@@ -9,7 +9,11 @@ import cv2
 from cv2.typing import MatLike
 from random import uniform
 from stable_baselines3.common.env_checker import check_env
-from gymnasium.wrappers.rescale_action import RescaleAction
+from gymnasium.wrappers import RescaleAction
+
+DONT_PUNISH_OTHER = 1
+PUNISH_OVERLAP = 2
+PUNISH_IOU = 3
 
 register(
     id='square-v6',
@@ -37,10 +41,9 @@ def draw_ellipse(bb: RectI, image: MatLike) -> None:
     x, y, w, h = bb
     cv2.ellipse(image, (x+w//2, y+h//2), (w//2-1, h//2-1), 0, 0, 360, (255,), 1)
 
-
 class SquareEnv(gymnasium.Env):
     metadata = {'render_modes': ['human'], 'render_fps':1} 
-    def __init__(self, height: int = 200, width: int = 200, render_mode=None) -> None:
+    def __init__(self, height: int = 100, width: int = 100, render_mode=None, reward_func=DONT_PUNISH_OTHER) -> None:
         super().__init__()
         self.height: int = height
         self.width: int = width
@@ -48,6 +51,7 @@ class SquareEnv(gymnasium.Env):
         self.steps: int = 0
         self.img: MatLike
         self.bb: list[BoundingBox] = []
+        self.reward_func = reward_func
 
         self.action_space = spaces.Box(low=0, high=np.array([1.0, 1.0, 1.0, 1.0]), shape=(4,), dtype=np.float32)
 
@@ -61,7 +65,7 @@ class SquareEnv(gymnasium.Env):
         self.img = np.zeros((self.height, self.width), np.uint8)
 
         for _ in range(25):
-            min_size = 0.05
+            min_size = 0.1
             xr, yr = uniform(min_size, 1-min_size), uniform(min_size, 1-min_size)
             wr, hr = uniform(min_size, min(xr, 1-xr)), uniform(min_size, min(yr, 1-yr))
             new_bb = BoundingBox((xr, yr, wr, hr), BoundingBoxType.CENTER)
@@ -95,22 +99,54 @@ class SquareEnv(gymnasium.Env):
 
         intersecting = [x for x in self.bb if x.has_overlap(bb)]
 
-        if (len(intersecting) == 0):
-            return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
-        elif (len(intersecting) == 1):
-            total_reward = intersecting[0].intersection_over_union(bb)
-        else:
-            intersecting.sort(key=lambda x: x.intersection_over_union(bb), reverse=True)
-            best_score = intersecting[0].intersection_over_union(bb)
-            other_overlap = sum([x.overlap(bb) for x in intersecting[1:]])
-            total_reward = best_score - 1*(other_overlap/bb.area())
+        if self.reward_func == DONT_PUNISH_OTHER:
+            if (len(intersecting) == 0):
+                return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
 
-        for i in intersecting:
-            x, y, w, h = i.get_rect(self.width, self.height)
-            self.img[0][y:y+h, x:x+w] = 0
-            self.bb.remove(i)
+            total_reward = max([x.intersection_over_union(bb) for x in intersecting])
 
-        return total_reward, len(self.bb) == 0
+            for i in intersecting:
+                x, y, w, h = i.get_rect(self.width, self.height)
+                self.img[0] [y:y+h, x:x+w] = 0
+                self.bb.remove(i)
+
+            return total_reward, len(self.bb) == 0
+        
+        elif self.reward_func == PUNISH_OVERLAP:
+            if (len(intersecting) == 0):
+                return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
+            elif (len(intersecting) == 1):
+                total_reward = intersecting[0].intersection_over_union(bb)
+            else:
+                intersecting.sort(key=lambda x: x.intersection_over_union(bb), reverse=True)
+                best_score = intersecting[0].intersection_over_union(bb)
+                other_overlap = sum([x.overlap(bb) for x in intersecting[1:]])
+                total_reward = best_score - 1*(other_overlap/bb.area())
+
+            for i in intersecting:
+                x, y, w, h = i.get_rect(self.width, self.height)
+                self.img[0][y:y+h, x:x+w] = 0
+                self.bb.remove(i)
+
+            return total_reward, len(self.bb) == 0
+        
+        elif self.reward_func == PUNISH_IOU:
+            if (len(intersecting) == 0):
+                return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
+            elif (len(intersecting) == 1):
+                total_reward = intersecting[0].intersection_over_union(bb)
+            else:
+                ious = sorted(list(map(lambda x: x.intersection_over_union(bb), intersecting)), reverse=True)
+                total_reward = ious[0] - 10*sum(ious[1:])
+
+            for i in intersecting:
+                x, y, w, h = i.get_rect(self.width, self.height)
+                self.img[0][y:y+h, x:x+w] = 0
+                self.bb.remove(i)
+
+            return total_reward, len(self.bb) == 0
+        
+        raise ValueError("Unknown reward func")
 
     def step(self, action):
         self.steps -= 1
@@ -141,21 +177,22 @@ class SquareEnv(gymnasium.Env):
 
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v6', render_mode='human')
+    env = gymnasium.make('square-v6', render_mode='none', width=200, height=200, reward_func=PUNISH_IOU)
     # env = RescaleAction(env, -1, 1)
 
     print("check begin")
     #check_env(env)
     print("check end")
 
-    """total = 0
+    total = 0
     for _ in range(10000):
         env.reset()
-        total += env.steps
+        #print(env.env.env.__dict__)
+        total += env.env.env.steps
 
-    print(total/10000)"""
+    print(total/10000)
 
-    obs = env.reset()[0]
+    """obs = env.reset()[0]
 
     for i in range(10):
         rand_action = env.action_space.sample()
@@ -163,4 +200,4 @@ if __name__ == "__main__":
         obs, reward, terminated, _, _ = env.step(rand_action)
         print(reward, terminated)
         if (terminated):
-            break
+            break"""

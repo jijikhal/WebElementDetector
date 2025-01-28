@@ -1,12 +1,9 @@
 import gymnasium as gym
-from gymnasium.wrappers.rescale_action import RescaleAction
-from gymnasium.wrappers.normalize import NormalizeObservation
-import numpy as np
-import matplotlib.pyplot as plt
+from gymnasium.wrappers import RescaleAction
 from stable_baselines3 import SAC, PPO, A2C
 from stable_baselines3.common.policies import ActorCriticPolicy
 import os
-import square_v6_env
+import square_v7_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import datetime
 from stable_baselines3.common.callbacks import EvalCallback
@@ -14,7 +11,6 @@ import torch
 from torchvision import models
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.utils import get_device
 from torch import nn
 
 class GrayscaleToRGB(nn.Module):
@@ -57,7 +53,7 @@ class CustomPPOPolicy(ActorCriticPolicy):
             features_extractor_kwargs=dict(output_dim=512),
         )
 
-ENV = 'square-v6'
+ENV = 'square-v7'
 
 def train():
     log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -65,11 +61,8 @@ def train():
 
     best_model_path = os.path.join(log_dir, "best_model")
 
-    env = gym.make(ENV)
+    env = gym.make(ENV, width=100, height=100)
     env = RescaleAction(env, min_action=-1, max_action=1) # Normalize Action space
-    #env = NormalizeObservation(env)
-    # Observation space normalization is done by SB3 for CNN
-    #env = SubprocVecEnv([lambda: gym.make(ENV) for i in range(8)])
 
     policy_kwargs = dict(
         net_arch=[dict(pi=[256, 128], vf=[256, 128])]     # Actor (pi) and Critic (vf) layers
@@ -91,7 +84,7 @@ def train():
         verbose=1
     )
 
-    #model.learn(total_timesteps=10000000, callback=eval_callback)
+    model.learn(total_timesteps=10000000, callback=eval_callback)
 
 if __name__ == '__main__':
     train()

@@ -1,12 +1,12 @@
 import gymnasium
 from bounding_box import BoundingBox, BoundingBoxType
-import square_v6_env
+import square_v7_env
 import cv2
 import numpy as np
 
 last_x = -1
 last_y = -1
-env = gymnasium.make('square-v6', render_mode='human')
+env = gymnasium.make('square-v7', render_mode='human')
 env.reset(seed=0)
 
 def draw_circle(event,x,y,flags,param):
@@ -24,14 +24,15 @@ def draw_circle(event,x,y,flags,param):
             print("reward: ", reward, " terminated: ", terminated)
             last_x = -1
             last_y = -1
+            print(env.env.env.bb)
     
 if __name__ == "__main__":
-    cv2.namedWindow('square-v6 render')
-    cv2.setMouseCallback('square-v6 render', draw_circle)
+    cv2.namedWindow('square-v7 render')
+    cv2.setMouseCallback('square-v7 render', draw_circle)
 
     while(1):
         frame = env.render()
-        cv2.imshow('square-v6 render', frame)
+        cv2.imshow('square-v7 render', frame)
 
         k = cv2.waitKey(20) & 0xFF
         if k == 27:
