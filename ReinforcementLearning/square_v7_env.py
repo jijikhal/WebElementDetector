@@ -61,18 +61,18 @@ class SquareEnv(gymnasium.Env):
         intersecting = [x for x in self.bb if x.bb.is_intersecting(guess) or guess.fully_contains(x.bb)]
 
         if (len(intersecting) == 0):
+            # If the bounding box does not contain anything, also include objects that contain it
             intersecting = [x for x in self.bb if x.bb.fully_contains(guess)]
-            intersecting.sort(key=lambda x: x.level, reverse=True)
-            intersecting = [intersecting[0]]
         
         if (len(intersecting) == 1):
-            total_reward = intersecting[0].bb.intersection_over_union(guess)
+            hit = intersecting[0]
+            total_reward = hit.bb.intersection_over_union(guess)
             remaining_children_area = 0
-            for c in intersecting[0].children:
+            for c in hit.children:
                 remaining_children_area += c.bb.area()
-            total_reward -= remaining_children_area / intersecting[0].bb.area()
+            total_reward -= remaining_children_area / hit.bb.area()
             
-            intersecting[0].remove(self.img[0], self.bb)
+            hit.remove(self.img[0], self.bb)
             end = len(self.bb) == 0
 
         else:
@@ -95,17 +95,17 @@ class SquareEnv(gymnasium.Env):
         stoped = self.steps <= 0
         x, y, w, h = bb.get_rect(self.width, self.height)
 
-        # Uncomment the following line to see the guess
-        #self.img[0][y:y+h, x:x+w] = 120
-
         obs = self.img
         info = {}
 
         if (self.render_mode == 'human'):
-            #print("boxes:", len(self.bb))
-            self.render()
-
-        #self.img[0][y:y+h, x:x+w] = 0
+            img_copy = self.img.copy()[0]
+            cv2.rectangle(img_copy, (x, y), (x+w-1, y+h-1), (127,), 1)
+            img_copy = cv2.resize(img_copy, (500, 500), interpolation=cv2.INTER_NEAREST_EXACT)
+            print(x, y, w, h, reward)
+            cv2.imshow("prediction", img_copy)
+            cv2.waitKey(0)
+            #self.render()
 
         return obs, reward, terminated, stoped, info
     

@@ -2,14 +2,14 @@ import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
 from stable_baselines3 import SAC, PPO, A2C
 import annotator_env
-import square_v6_env
+import square_v7_env
 
-ENV = 'square-v6'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v6200x200_25_iou\best_model\best_model.zip"
+ENV = 'square-v7'
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250128-234344\best_model\best_model.zip"
 
 def test(render=True):
 
-    env = gym.make(ENV, width=200, height=200, reward_func=square_v6_env.PUNISH_IOU, render_mode='none')
+    env = gym.make(ENV, width=100, height=100, render_mode='human')
     env = RescaleAction(env, -1, 1) # Normalize Action space
 
     # Load model

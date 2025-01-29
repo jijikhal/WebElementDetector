@@ -86,3 +86,11 @@ def generete_hierarchy(size: tuple[int, int], seed_set = None) -> tuple[MatLike,
     root.create_children(hierarchy)
     root.draw_self(img)
     return img, hierarchy
+
+if __name__ == "__main__":
+    while True:
+        img, _ = generete_hierarchy((500, 700), None)
+        cv2.imshow("hierarchy", img)
+        if cv2.waitKey(0) & 0xFF == 27:
+            break
+    cv2.destroyAllWindows()

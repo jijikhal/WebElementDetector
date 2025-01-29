@@ -6,8 +6,9 @@ import numpy as np
 
 last_x = -1
 last_y = -1
-env = gymnasium.make('square-v7', render_mode='human')
-env.reset(seed=0)
+env = gymnasium.make('square-v7', render_mode='human', height=200, width=200)
+# Change None to some number to make it determinisitc
+env.reset(seed=None)
 
 def draw_circle(event,x,y,flags,param):
     global last_x, last_y, env

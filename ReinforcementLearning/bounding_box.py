@@ -90,6 +90,11 @@ class BoundingBox:
         return w*h
     
     def is_intersecting(self, other: 'BoundingBox') -> bool:
+        """
+        Returns whether the bounding rectangles of the two bounding boxes have any common points.
+
+        Importantly if one is fully inside the other, it returns False.
+        """
         x1, y1, w1, h1 = self.get_bb_tl()
         x2, y2, w2, h2 = other.get_bb_tl()
 
@@ -104,6 +109,9 @@ class BoundingBox:
         return True
     
     def overlap(self, other: 'BoundingBox') -> float:
+        """
+        Returns the area of an overlap of two bounding boxes
+        """
         x1, y1, w1, h1 = self.get_bb_tl()
         x2, y2, w2, h2 = other.get_bb_tl()
         x, y = max(x1, x2), max(y1, y2)
@@ -111,9 +119,15 @@ class BoundingBox:
         return max(0, xd-x)*max(0, yd-y)
     
     def has_overlap(self, other: 'BoundingBox') -> bool:
+        """
+        Returns whether two bounding boxes have any overlap
+        """
         return self.overlap(other) > 0.0001
     
     def intersection_over_union(self, other: 'BoundingBox') -> float:
+        """
+        Calculates the IoU metric (Jaccard index) for two bounding boxes
+        """
         x1, y1, w1, h1 = self.get_bb_tl()
         x2, y2, w2, h2 = other.get_bb_tl()
         x, y = max(x1, x2), max(y1, y2)
