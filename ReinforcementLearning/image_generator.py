@@ -3,7 +3,6 @@ import cv2
 from cv2.typing import MatLike
 from random import uniform, choice, randint, seed
 import numpy as np
-from typing import Self
 
 MIN_SIZE = 0.02 # minimal size of object
 MIN_SPACING = 0.02 # minimal distance between two objects

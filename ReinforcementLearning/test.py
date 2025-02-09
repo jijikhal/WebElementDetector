@@ -1,16 +1,15 @@
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
-from stable_baselines3 import SAC, PPO, A2C
-import annotator_env
-import square_v7_env
+from stable_baselines3 import PPO
+import square_v2_env_discrete
 
-ENV = 'square-v7'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250128-234344\best_model\best_model.zip"
+ENV = 'square-v2-discrete'
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250208-203740\best_model\best_model.zip"
 
 def test(render=True):
 
     env = gym.make(ENV, width=100, height=100, render_mode='human')
-    env = RescaleAction(env, -1, 1) # Normalize Action space
+    #env = RescaleAction(env, -1, 1) # Normalize Action space
 
     # Load model
     model = PPO.load(MODEL, env=env)

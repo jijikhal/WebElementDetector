@@ -1,13 +1,9 @@
 import gymnasium as gym
-from gymnasium.wrappers.rescale_action import RescaleAction
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import SAC, PPO, A2C
 import os
-import annotator_env
-import square_v2_env
-import square_v3_env
-import square_v4_env
+import square_v2_env_discrete
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import datetime
 from stable_baselines3.common.callbacks import EvalCallback
@@ -50,7 +46,7 @@ class CustomCNN(BaseFeaturesExtractor):
         return self.linear(self.cnn(observations))
 
 
-ENV = 'square-v4'
+ENV = 'square-v2-discrete'
 
 def train():
     log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -59,7 +55,6 @@ def train():
     best_model_path = os.path.join(log_dir, "best_model")
 
     env = gym.make(ENV)
-    env = RescaleAction(env, -1, 1) # Normalize Action space
     # Observation space normalization is done by SB3 for CNN
     #env = SubprocVecEnv([lambda: gym.make(ENV) for i in range(8)])
 
@@ -85,7 +80,7 @@ def train():
         verbose=1
     )
 
-    #model.learn(total_timesteps=10000000, callback=eval_callback)
+    model.learn(total_timesteps=10000000, callback=eval_callback)
 
 if __name__ == '__main__':
     train()
