@@ -25,7 +25,7 @@ def draw_circle(event,x,y,flags,param):
             print("reward: ", reward, " terminated: ", terminated)
             last_x = -1
             last_y = -1
-            print(env.env.env.bb)
+            #print(env.env.env.bb)
     
 if __name__ == "__main__":
     cv2.namedWindow('square-v7 render')

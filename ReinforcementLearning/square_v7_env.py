@@ -63,9 +63,20 @@ class SquareEnv(gymnasium.Env):
         if (len(intersecting) == 0):
             # If the bounding box does not contain anything, also include objects that contain it
             intersecting = [x for x in self.bb if x.bb.fully_contains(guess)]
+            intersecting.sort(key=lambda x: x.level, reverse=True)
+            intersecting = [intersecting[0]]
         
         if (len(intersecting) == 1):
             hit = intersecting[0]
+
+            ## Modification to only reward inner boxes
+            if hit.level < 2:
+                still_valid = list(filter(lambda x: x.level >= 2, self.bb))
+                if len(still_valid) > 0:
+                    return -len(still_valid), True
+                return 0, True
+            ## END
+
             total_reward = hit.bb.intersection_over_union(guess)
             remaining_children_area = 0
             for c in hit.children:
@@ -78,6 +89,15 @@ class SquareEnv(gymnasium.Env):
         else:
             intersecting.sort(key=lambda x: x.level, reverse=True)
             lowest_child = intersecting[0]
+
+            ## Modification to only reward inner boxes
+            if lowest_child.level < 2:
+                still_valid = list(filter(lambda x: x.level >= 2, self.bb))
+                if len(still_valid) > 0:
+                    return -len(still_valid), True
+                return 0, True
+            ## END
+
             best_score = lowest_child.bb.intersection_over_union(guess)
             other_overlap = sum([x.bb.overlap(guess) for x in intersecting[1:]])
             total_reward = best_score
@@ -99,13 +119,13 @@ class SquareEnv(gymnasium.Env):
         info = {}
 
         if (self.render_mode == 'human'):
-            img_copy = self.img.copy()[0]
+            """img_copy = self.img.copy()[0]
             cv2.rectangle(img_copy, (x, y), (x+w-1, y+h-1), (127,), 1)
             img_copy = cv2.resize(img_copy, (500, 500), interpolation=cv2.INTER_NEAREST_EXACT)
             print(x, y, w, h, reward)
             cv2.imshow("prediction", img_copy)
-            cv2.waitKey(0)
-            #self.render()
+            cv2.waitKey(0)"""
+            self.render()
 
         return obs, reward, terminated, stoped, info
     
