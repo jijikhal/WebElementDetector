@@ -119,13 +119,13 @@ class SquareEnv(gymnasium.Env):
         info = {}
 
         if (self.render_mode == 'human'):
-            """img_copy = self.img.copy()[0]
+            img_copy = self.img.copy()[0]
             cv2.rectangle(img_copy, (x, y), (x+w-1, y+h-1), (127,), 1)
             img_copy = cv2.resize(img_copy, (500, 500), interpolation=cv2.INTER_NEAREST_EXACT)
             print(x, y, w, h, reward)
             cv2.imshow("prediction", img_copy)
-            cv2.waitKey(0)"""
-            self.render()
+            cv2.waitKey(0)
+            #self.render()
 
         return obs, reward, terminated, stoped, info
     
