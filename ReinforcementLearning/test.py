@@ -2,10 +2,11 @@ import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
 from stable_baselines3 import PPO
 import square_v3_env_discrete
+import square_v5_env_discrete
 import square_v7_env
 
-ENV = 'square-v3-discrete'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250212-000519\best_model\best_model.zip"
+ENV = 'square-v5-discrete'
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v3d_transfer_from_wrong\best_model\best_model.zip"
 
 def test(render=True):
 
@@ -14,6 +15,7 @@ def test(render=True):
 
     # Load model
     model = PPO.load(MODEL, env=env)
+    print(model.gamma, model.clip_range)
     total_reward = 0
     total_steps = 0
 
