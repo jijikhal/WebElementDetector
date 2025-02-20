@@ -5,6 +5,7 @@ from stable_baselines3.common.policies import ActorCriticPolicy
 import os
 import square_v3_env_discrete
 import square_v5_env_discrete
+import square_v7_env_discrete
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import datetime
 from stable_baselines3.common.callbacks import EvalCallback
@@ -54,7 +55,7 @@ class CustomPPOPolicy(ActorCriticPolicy):
             features_extractor_kwargs=dict(output_dim=512),
         )
 
-ENV = 'square-v5-discrete'
+ENV = 'square-v7-discrete'
 
 def train():
     log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -69,8 +70,8 @@ def train():
         net_arch=[dict(pi=[256, 128], vf=[256, 128])]     # Actor (pi) and Critic (vf) layers
     )
 
-    model = PPO(CustomPPOPolicy, env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda')
-    #model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250212-000519\best_model\best_model.zip", env=env)
+    model = PPO(CustomPPOPolicy, env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda', gamma=0.95, clip_range=0.15)
+    #model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250213-223317\best_model\best_model.zip", env=env)
     print(model.policy)
     print(sum(p.numel() for p in model.policy.parameters()))
 

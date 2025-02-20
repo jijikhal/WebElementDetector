@@ -9,7 +9,7 @@ from cv2.typing import MatLike
 import math
 from random import uniform
 from stable_baselines3.common.env_checker import check_env
-from gymnasium.wrappers.rescale_action import RescaleAction
+from gymnasium.wrappers import RescaleAction
 
 register(
     id='square-v5',
