@@ -30,7 +30,7 @@ def draw_rect(bb: RectI, image: MatLike) -> None:
     cv2.rectangle(image, (x, y), (x+w-1, y+h-1), (255,), 1)
 
 class SquareEnv(gymnasium.Env):
-    metadata = {'render_modes': ['human'], 'render_fps':1} 
+    metadata = {'render_modes': ['human','none'], 'render_fps':1} 
     def __init__(self, height: int = 100, width: int = 100, render_mode=None) -> None:
         super().__init__()
         self.height: int = height
@@ -159,30 +159,33 @@ class SquareEnv(gymnasium.Env):
         return obs, 0, False, self.steps <= 0, {}
     
     def render(self):
-        x1 = int(self.view[0]*self.width)
-        y1 = int(self.view[1]*self.height)
-        x2 = max(int(self.view[2]*self.width), x1)
-        y2 = max(int(self.view[3]*self.height), y1)
+        if self.render_mode == 'human':
+            x1 = int(self.view[0]*self.width)
+            y1 = int(self.view[1]*self.height)
+            x2 = max(int(self.view[2]*self.width), x1)
+            y2 = max(int(self.view[3]*self.height), y1)
 
-        if (x1 == x2):
-            if (x2 == self.width):
-                x1 -= 2
-            elif (x1 == 0):
-                x2 += 2
-            else:
-                x2 +=2
+            if (x1 == x2):
+                if (x2 == self.width):
+                    x1 -= 2
+                elif (x1 == 0):
+                    x2 += 2
+                else:
+                    x2 +=2
 
-        if (y1 == y2):
-            if (y2 == self.height):
-                y1 -= 2
-            elif (y1 == 0):
-                y2 += 2
-            else:
-                y2 +=2
-        view = self.img[0][y1:y2, x1:x2]
-        show = cv2.resize(view, (500, 500), interpolation=cv2.INTER_NEAREST)
-        cv2.imshow("square-v5-discrete render", show)
-        cv2.waitKey(0)
+            if (y1 == y2):
+                if (y2 == self.height):
+                    y1 -= 2
+                elif (y1 == 0):
+                    y2 += 2
+                else:
+                    y2 +=2
+            view = self.img[0][y1:y2, x1:x2]
+            show = cv2.resize(view, (500, 500), interpolation=cv2.INTER_NEAREST)
+            cv2.imshow("square-v5-discrete render", show)
+            cv2.waitKey(0)
+        else:
+            return self.view
 
 if __name__ == "__main__":
     env = gymnasium.make('square-v7-discrete', render_mode='human')#, width=200, height=200)

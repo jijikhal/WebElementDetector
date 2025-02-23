@@ -255,10 +255,12 @@ if __name__ == "__main__":
     # Do not prune before 1/3 of the max budget is used.
     pruner = MedianPruner(n_startup_trials=N_STARTUP_TRIALS, n_warmup_steps=N_EVALUATIONS // 3)
 
-    study_name = "v7-discrete"  # Unique identifier of the study.
-    storage_name = "sqlite:///{}.db".format(study_name)
+    #study_name = "v7-discrete"  # Unique identifier of the study.
+    #storage_name = "sqlite:///{}.db".format(study_name)
+    storage_name = "postgresql://[redacted]/JindraThesis?sslmode=prefer"
+    study_name = "v7-discrete"
 
-    study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize", storage=storage_name, load_if_exists=True, study_name=study_name+"2")
+    study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize", storage=storage_name, load_if_exists=True, study_name=study_name)
     try:
         study.optimize(objective, n_trials=N_TRIALS, timeout=None)
     except KeyboardInterrupt:

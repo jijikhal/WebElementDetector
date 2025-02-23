@@ -50,6 +50,24 @@ class CustomCNN(BaseFeaturesExtractor):
 
 ENV = 'square-v7-discrete'
 
+## Taken from rl-zoo
+def linear_schedule(initial_value: float):
+    def func(progress_remaining: float) -> float:
+        return progress_remaining * initial_value
+
+    return func
+
+def custom_schedule(initial_value: float):
+    def func(progress_remaining: float) -> float:
+        total_timesteps = 1_000_000  # Example: Total training steps
+        current_step = int((1 - progress_remaining) * total_timesteps)
+        if current_step < 200_000:
+            return initial_value * (1 - current_step / 200_000)
+        else:
+            return initial_value * 0.1  # Hold at 10% of initial value after 200k steps
+
+    return func
+
 def train():
     log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     #os.makedirs(log_dir, exist_ok=True)
@@ -63,11 +81,25 @@ def train():
     policy_kwargs = dict(
         features_extractor_class=CustomCNN,
         features_extractor_kwargs=dict(features_dim=512),  # Set the output feature dimension of the CNN
-        net_arch=[dict(pi=[256, 128], vf=[256, 128])]     # Actor (pi) and Critic (vf) layers
+        net_arch=[dict(pi=[256, 256], vf=[256, 256])],     # Actor (pi) and Critic (vf) layers
+        ortho_init=False,
+        activation_fn=nn.ReLU
     )
 
-    model = PPO('CnnPolicy', env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda', gamma=0.95, clip_range=0.15)
-    #model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v5dbiggernetgamma095clip015\best_model\best_model.zip", env=env)
+    model = PPO('CnnPolicy', env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda',
+                batch_size=32,
+                n_steps=2048,
+                gamma=0.99,
+                learning_rate=custom_schedule(2.6226217364486832e-05),
+                ent_coef=2.3405243352330302e-05,
+                clip_range=0.3,
+                n_epochs=20,
+                gae_lambda=0.9,
+                max_grad_norm=0.3,
+                vf_coef=0.8968584303991769,
+                )
+    #model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250223-010153\best_model\best_model.zip", env=env)
+    #model.learning_rate = 4.6226217364486832e-06
     print(model.policy)
     print(sum(p.numel() for p in model.policy.parameters()))
 
@@ -82,7 +114,7 @@ def train():
         verbose=1
     )
 
-    model.learn(total_timesteps=10000000, callback=eval_callback)
+    model.learn(total_timesteps=1_000_000, callback=eval_callback)
 
 if __name__ == '__main__':
     train()
