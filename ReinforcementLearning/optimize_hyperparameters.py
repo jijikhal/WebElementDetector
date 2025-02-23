@@ -257,7 +257,7 @@ if __name__ == "__main__":
 
     #study_name = "v7-discrete"  # Unique identifier of the study.
     #storage_name = "sqlite:///{}.db".format(study_name)
-    storage_name = "postgresql://[redacted]/JindraThesis?sslmode=prefer"
+    storage_name = "postgresql://user:password@url:port/JindraThesis?sslmode=prefer"
     study_name = "v7-discrete"
 
     study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize", storage=storage_name, load_if_exists=True, study_name=study_name)

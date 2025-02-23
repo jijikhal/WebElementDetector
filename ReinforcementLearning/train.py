@@ -59,7 +59,7 @@ def linear_schedule(initial_value: float):
 
 def custom_schedule(initial_value: float):
     def func(progress_remaining: float) -> float:
-        total_timesteps = 1_000_000  # Example: Total training steps
+        total_timesteps = 10_000_000  # Example: Total training steps
         current_step = int((1 - progress_remaining) * total_timesteps)
         if current_step < 200_000:
             return initial_value * (1 - current_step / 200_000)
@@ -90,7 +90,7 @@ def train():
                 batch_size=32,
                 n_steps=2048,
                 gamma=0.99,
-                learning_rate=custom_schedule(2.6226217364486832e-05),
+                learning_rate=custom_schedule(2.6226217364486832e-06),
                 ent_coef=2.3405243352330302e-05,
                 clip_range=0.3,
                 n_epochs=20,
@@ -98,7 +98,8 @@ def train():
                 max_grad_norm=0.3,
                 vf_coef=0.8968584303991769,
                 )
-    #model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250223-010153\best_model\best_model.zip", env=env)
+    old_model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250223-175015\best_model\best_model.zip", env=env)
+    model.policy.load_state_dict(old_model.policy.state_dict())
     #model.learning_rate = 4.6226217364486832e-06
     print(model.policy)
     print(sum(p.numel() for p in model.policy.parameters()))
@@ -114,7 +115,7 @@ def train():
         verbose=1
     )
 
-    model.learn(total_timesteps=1_000_000, callback=eval_callback)
+    model.learn(total_timesteps=10_000_000, callback=eval_callback)
 
 if __name__ == '__main__':
     train()
