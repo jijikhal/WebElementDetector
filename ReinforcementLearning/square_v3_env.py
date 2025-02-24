@@ -66,7 +66,7 @@ class SquareEnv(gymnasium.Env):
         if (len(intersecting) == 0):
             return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
 
-        total_reward = max([x.intersection_over_union(bb) for x in intersecting])
+        total_reward = max([x.iou(bb) for x in intersecting])
 
         for i in intersecting:
             x, y, w, h = i.get_rect(self.width, self.height)

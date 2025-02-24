@@ -103,7 +103,7 @@ class SquareEnv(gymnasium.Env):
             if (len(intersecting) == 0):
                 return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
 
-            total_reward = max([x.intersection_over_union(bb) for x in intersecting])
+            total_reward = max([x.iou(bb) for x in intersecting])
 
             for i in intersecting:
                 x, y, w, h = i.get_rect(self.width, self.height)
@@ -116,10 +116,10 @@ class SquareEnv(gymnasium.Env):
             if (len(intersecting) == 0):
                 return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
             elif (len(intersecting) == 1):
-                total_reward = intersecting[0].intersection_over_union(bb)
+                total_reward = intersecting[0].iou(bb)
             else:
-                intersecting.sort(key=lambda x: x.intersection_over_union(bb), reverse=True)
-                best_score = intersecting[0].intersection_over_union(bb)
+                intersecting.sort(key=lambda x: x.iou(bb), reverse=True)
+                best_score = intersecting[0].iou(bb)
                 other_overlap = sum([x.overlap(bb) for x in intersecting[1:]])
                 total_reward = best_score - 1*(other_overlap/bb.area())
 
@@ -134,9 +134,9 @@ class SquareEnv(gymnasium.Env):
             if (len(intersecting) == 0):
                 return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
             elif (len(intersecting) == 1):
-                total_reward = intersecting[0].intersection_over_union(bb)
+                total_reward = intersecting[0].iou(bb)
             else:
-                ious = sorted(list(map(lambda x: x.intersection_over_union(bb), intersecting)), reverse=True)
+                ious = sorted(list(map(lambda x: x.iou(bb), intersecting)), reverse=True)
                 total_reward = ious[0] - 10*sum(ious[1:])
 
             for i in intersecting:

@@ -53,7 +53,7 @@ class SquareEnv(gymnasium.Env):
         x1, y1, _, _= bb.get_bb_middle()
         x2, y2, _, _ = self.bb.get_bb_middle()
 
-        total_reward = self.bb.intersection_over_union(bb)
+        total_reward = self.bb.iou(bb)
         if (total_reward <= 0):
             total_reward -= math.sqrt((x1-x2)**2+(y1-y2)**2)
 

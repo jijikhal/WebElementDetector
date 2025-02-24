@@ -77,7 +77,7 @@ class SquareEnv(gymnasium.Env):
                 return 0, True
             ## END
 
-            total_reward = hit.bb.intersection_over_union(guess)
+            total_reward = hit.bb.iou(guess)
             remaining_children_area = 0
             for c in hit.children:
                 remaining_children_area += c.bb.area()
@@ -98,7 +98,7 @@ class SquareEnv(gymnasium.Env):
                 return 0, True
             ## END
 
-            best_score = lowest_child.bb.intersection_over_union(guess)
+            best_score = lowest_child.bb.iou(guess)
             other_overlap = sum([x.bb.overlap(guess) for x in intersecting[1:]])
             total_reward = best_score
             if (guess.area() != 0):

@@ -15,6 +15,10 @@ register(
     entry_point='square_v7_env_discrete:SquareEnv'
 )
 
+IOU_THRESHOLD = 0.5
+REWARD_SPARSE = 0
+REWARD_DENSE = 1
+
 SHRINK_LEFT = 0
 SHRINK_RIGHT = 1
 SHRINK_TOP = 2
@@ -31,7 +35,7 @@ def draw_rect(bb: RectI, image: MatLike) -> None:
 
 class SquareEnv(gymnasium.Env):
     metadata = {'render_modes': ['human','none'], 'render_fps':1} 
-    def __init__(self, height: int = 100, width: int = 100, render_mode=None) -> None:
+    def __init__(self, height: int = 100, width: int = 100, reward: int = REWARD_SPARSE,  render_mode=None) -> None:
         super().__init__()
         self.height: int = height
         self.width: int = width
@@ -40,6 +44,8 @@ class SquareEnv(gymnasium.Env):
         self.img: MatLike
         self.bb: list[Node] = []
         self.view: list[float] = [0.0, 0.0, 1.0, 1.0]
+        self.last_reward = 0
+        self.reward_type = reward
 
         self.action_space = spaces.Discrete(9)
 
@@ -53,6 +59,7 @@ class SquareEnv(gymnasium.Env):
 
         self.steps = len(self.bb)*30
         self.view = [0, 0, 1, 1]
+        self.last_reward = 0
         
         # Convert to channel-first format. See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
         self.img = np.expand_dims(self.img, axis=0)
@@ -65,8 +72,7 @@ class SquareEnv(gymnasium.Env):
 
         return obs, info
     
-    def calculate_reward(self, rect: RectF) -> tuple[float, bool]:
-
+    def calculate_reward_sparse(self, rect: RectF) -> tuple[float, bool]:
         guess = BoundingBox(rect, BoundingBoxType.CENTER)
         end = False
 
@@ -81,7 +87,7 @@ class SquareEnv(gymnasium.Env):
         if (len(intersecting) == 1):
             hit = intersecting[0]
 
-            total_reward = hit.bb.intersection_over_union(guess)
+            total_reward = hit.bb.iou(guess)
             remaining_children_area = 0
             for c in hit.children:
                 remaining_children_area += c.bb.area()
@@ -94,7 +100,7 @@ class SquareEnv(gymnasium.Env):
             intersecting.sort(key=lambda x: x.level, reverse=True)
             lowest_child = intersecting[0]
 
-            best_score = lowest_child.bb.intersection_over_union(guess)
+            best_score = lowest_child.bb.iou(guess)
             other_overlap = sum([x.bb.overlap(guess) for x in intersecting[1:]])
             total_reward = best_score
             if (guess.area() != 0):
@@ -102,6 +108,26 @@ class SquareEnv(gymnasium.Env):
             lowest_child.remove(self.img[0], self.bb)
 
         return total_reward, end
+    
+    def calculate_reward_dense(self, rect: RectF, stop: bool) -> tuple[float, bool]:
+
+        guess = BoundingBox(rect, BoundingBoxType.CENTER)
+
+        intersecting_leaves = [x for x in self.bb if x.is_leaf() and x.bb.has_overlap(guess)]
+        intersecting_leaves.sort(key=lambda x: x.bb.iou(guess), reverse=True)
+
+        max_iou = intersecting_leaves[0].bb.iou(guess) if len(intersecting_leaves) > 0 else 0
+
+        if stop:
+            if max_iou > IOU_THRESHOLD:
+                intersecting_leaves[0].remove(self.img[0], self.bb)
+                return 3, len(self.bb) == 0
+            return -3, len(self.bb) == 0
+            
+        diff = max_iou - self.last_reward
+        self.last_reward = max_iou
+
+        return diff, False
 
     def step(self, action):
         self.steps -= 1
@@ -147,16 +173,25 @@ class SquareEnv(gymnasium.Env):
         view = self.img[0][y1:y2, x1:x2]
         obs = np.expand_dims(cv2.resize(view, (self.width, self.height), interpolation=cv2.INTER_NEAREST), axis=0)
 
+        reward, terminated = 0, False
+
+        bb = BoundingBox(self.view, BoundingBoxType.TWO_CORNERS)
+        if self.reward_type == REWARD_DENSE:
+            reward, terminated = self.calculate_reward_dense(bb.get_bb_middle(), False)
+
         if action == STOP:
-            bb = BoundingBox(self.view, BoundingBoxType.TWO_CORNERS)
-            reward, terminated = self.calculate_reward(bb.get_bb_middle())
+            if self.reward_type == REWARD_DENSE:
+                reward, terminated = self.calculate_reward_dense(bb.get_bb_middle(), True)
+            else:
+                reward, terminated = self.calculate_reward_sparse(bb.get_bb_middle())
             self.view = [0, 0, 1, 1]
+            self.last_reward = 0
             return self.img, reward, terminated, False, {}
 
         if (self.render_mode == 'human'):
             self.render()
 
-        return obs, 0, False, self.steps <= 0, {}
+        return obs, reward, terminated, self.steps <= 0, {}
     
     def render(self):
         if self.render_mode == 'human':
@@ -188,7 +223,7 @@ class SquareEnv(gymnasium.Env):
             return self.view
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v7-discrete', render_mode='human')#, width=200, height=200)
+    env = gymnasium.make('square-v7-discrete', render_mode='none', reward=REWARD_DENSE)#, width=200, height=200)
 
     print("check begin")
     check_env(env)

@@ -17,6 +17,9 @@ class Node:
         self.level = level
         self.parent = parent
 
+    def is_leaf(self) -> bool:
+        return len(self.children) == 0
+
     def draw_self(self, img: MatLike) -> MatLike:
         height, width = img.shape
         x1, y1, x2, y2 = self.bb.get_bb_corners()
@@ -81,7 +84,7 @@ def generete_hierarchy(size: tuple[int, int], seed_set = None) -> tuple[MatLike,
     seed(seed_set)
     root = Node(BoundingBox((0,0,1,1), BoundingBoxType.TOP_LEFT), 0, None)
     img = np.zeros(size, dtype=np.uint8)
-    hierarchy = []
+    hierarchy: list[Node] = []
     root.create_children(hierarchy)
     root.draw_self(img)
     return img, hierarchy

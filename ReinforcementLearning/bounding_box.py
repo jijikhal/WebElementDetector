@@ -124,7 +124,7 @@ class BoundingBox:
         """
         return self.overlap(other) > 0.0001
     
-    def intersection_over_union(self, other: 'BoundingBox') -> float:
+    def iou(self, other: 'BoundingBox') -> float:
         """
         Calculates the IoU metric (Jaccard index) for two bounding boxes
         """
