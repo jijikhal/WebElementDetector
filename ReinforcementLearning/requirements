@@ -1,0 +1,9 @@
+sudo apt update
+sudo apt install pip
+pip install opencv-python
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+pip install stable-baselines3[extra]
+pip install optuna
+pip install optuna-dashboard
+sudo apt install ffmpeg libsm6 libxext6
+pip install psycopg2-binary

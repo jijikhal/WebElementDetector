@@ -35,7 +35,7 @@ def draw_rect(bb: RectI, image: MatLike) -> None:
 
 class SquareEnv(gymnasium.Env):
     metadata = {'render_modes': ['human','none'], 'render_fps':1} 
-    def __init__(self, height: int = 100, width: int = 100, reward: int = REWARD_SPARSE,  render_mode=None) -> None:
+    def __init__(self, height: int = 100, width: int = 100, reward: int = REWARD_DENSE,  render_mode=None) -> None:
         super().__init__()
         self.height: int = height
         self.width: int = width
