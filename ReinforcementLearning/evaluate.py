@@ -6,9 +6,9 @@ from random import randint
 from time import time
 
 ENV = 'square-v7-discrete'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250223-012229\best_model\best_model.zip"
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v7d_simple_long_my_rf\best_model\best_model.zip"
 
-env = gym.make(ENV, width=100, height=100, render_mode='none')
+env = gym.make(ENV, width=100, height=100, render_mode='none', reward=square_v7_env_discrete.REWARD_DENSE)
 model = PPO.load(MODEL)
 
 for i in range(10):
@@ -24,18 +24,20 @@ for i in range(10):
     terminated = False
     start = time()
 
+    steps = 0
     while not terminated:
-        action, _ = model.predict(obs)
-        if (action == STOP):
-            predictions.append(env.render())
+        steps += 1
+        action, _ = model.predict(obs, deterministic=True)
+        if (steps > 30):
+            action = STOP
+        bbox = env.render()
         obs, reward, terminated, _, _ = env.step(action)
-        if (terminated):
-            break
+        if (action == STOP):
+            cv2.rectangle(image, (int(bbox[0]*width), int(bbox[1]*height)), (int(bbox[2]*width), int(bbox[3]*height)), (0, int(255*max(0, reward/3)), int(255*(1-max(0, reward/3)))))
+            steps = 0
+            print(reward)
 
-    print(time()-start)
-
-    for p in predictions:
-        cv2.rectangle(image, (int(p[0]*width), int(p[1]*height)), (int(p[2]*width), int(p[3]*height)), (randint(0, 128), randint(0, 128), randint(128, 255)))
+    print("Took:", time()-start)
 
     image = cv2.resize(image, (500, 500), interpolation=cv2.INTER_NEAREST)
 

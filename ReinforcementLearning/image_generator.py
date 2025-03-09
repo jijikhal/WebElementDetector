@@ -4,10 +4,10 @@ from cv2.typing import MatLike
 from random import uniform, choice, randint, seed
 import numpy as np
 
-MIN_SIZE = 0.05 # minimal size of object
-MIN_SPACING = 0.05 # minimal distance between two objects
-MAX_SIBILINGS = 3 # max amount of children
-MAX_DEPTH = 3 # max depth
+MIN_SIZE = 0.02 # minimal size of object
+MIN_SPACING = 0.03 # minimal distance between two objects
+MAX_SIBILINGS = 4 # max amount of children
+MAX_DEPTH = 4 # max depth
 MAX_EDGE = 0.2 # max space from parent to child
 
 class Node:
@@ -90,6 +90,12 @@ def generete_hierarchy(size: tuple[int, int], seed_set = None) -> tuple[MatLike,
     return img, hierarchy
 
 if __name__ == "__main__":
+    """total = 0
+    for _ in range(10000):
+        img, h = generete_hierarchy((100, 100), None)
+        total += len(h)
+    print(total/10000)"""
+
     while True:
         img, _ = generete_hierarchy((100, 100), None)
         cv2.imshow("hierarchy", img)

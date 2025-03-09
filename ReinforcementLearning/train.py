@@ -74,7 +74,7 @@ def train():
 
     best_model_path = os.path.join(log_dir, "best_model")
 
-    env = gym.make(ENV)
+    env = gym.make(ENV, reward=square_v7_env_discrete.REWARD_DENSE)
     # Observation space normalization is done by SB3 for CNN
     #env = SubprocVecEnv([lambda: gym.make(ENV) for i in range(8)])
 
@@ -90,7 +90,8 @@ def train():
                 batch_size=32,
                 n_steps=2048,
                 gamma=0.99,
-                learning_rate=custom_schedule(2.6226217364486832e-06),
+                #learning_rate=custom_schedule(2.6226217364486832e-05),
+                learning_rate = 4.6226217364486832e-06,
                 ent_coef=2.3405243352330302e-05,
                 clip_range=0.3,
                 n_epochs=20,
@@ -98,9 +99,8 @@ def train():
                 max_grad_norm=0.3,
                 vf_coef=0.8968584303991769,
                 )
-    old_model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250223-175015\best_model\best_model.zip", env=env)
+    old_model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v7d_simple_long_my_rf\best_model\best_model.zip", env=env)
     model.policy.load_state_dict(old_model.policy.state_dict())
-    #model.learning_rate = 4.6226217364486832e-06
     print(model.policy)
     print(sum(p.numel() for p in model.policy.parameters()))
 
@@ -111,7 +111,7 @@ def train():
         eval_freq=10000,  # Evaluate every 10000 steps
         deterministic=True,
         render=False,
-        n_eval_episodes=5,
+        n_eval_episodes=100,
         verbose=1
     )
 

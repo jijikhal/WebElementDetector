@@ -119,10 +119,9 @@ class SquareEnv(gymnasium.Env):
         max_iou = intersecting_leaves[0].bb.iou(guess) if len(intersecting_leaves) > 0 else 0
 
         if stop:
-            if max_iou > IOU_THRESHOLD:
+            if len(intersecting_leaves) > 0:
                 intersecting_leaves[0].remove(self.img[0], self.bb)
-                return 3, len(self.bb) == 0
-            return -3, len(self.bb) == 0
+            return max_iou*3, len(self.bb) == 0
             
         diff = max_iou - self.last_reward
         self.last_reward = max_iou
