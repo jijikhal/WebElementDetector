@@ -1,14 +1,14 @@
 import gymnasium as gym
 from stable_baselines3 import PPO
-import square_v7_env_discrete
+import square_v8_env_discrete
 import cv2
 from random import randint
 from time import time
 
-ENV = 'square-v7-discrete'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v7d_simple_long_my_rf\best_model\best_model.zip"
+ENV = 'square-v8-discrete'
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250323-214736\best_model\best_model.zip"
 
-env = gym.make(ENV, width=100, height=100, render_mode='none', reward=square_v7_env_discrete.REWARD_DENSE)
+env = gym.make(ENV, width=100, height=100, render_mode='none')
 model = PPO.load(MODEL)
 
 for i in range(10):
@@ -36,6 +36,7 @@ for i in range(10):
             cv2.rectangle(image, (int(bbox[0]*width), int(bbox[1]*height)), (int(bbox[2]*width), int(bbox[3]*height)), (0, int(255*max(0, reward/3)), int(255*(1-max(0, reward/3)))))
             steps = 0
             print(reward)
+            print(bbox)
 
     print("Took:", time()-start)
 

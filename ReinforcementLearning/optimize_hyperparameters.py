@@ -124,7 +124,7 @@ def sample_ppo_params_rl_zoo(trial: optuna.Trial) -> dict[str, Any]:
     gae_lambda = trial.suggest_categorical("gae_lambda", [0.8, 0.9, 0.92, 0.95, 0.98, 0.99, 1.0])
     max_grad_norm = trial.suggest_categorical("max_grad_norm", [0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 5])
     vf_coef = trial.suggest_float("vf_coef", 0, 1)
-    net_arch_type = trial.suggest_categorical("net_arch", ["tiny", "small", "medium"])
+    net_arch_type = trial.suggest_categorical("net_arch", ["tiny", "small", "medium", "large"])
     # Uncomment for gSDE (continuous actions)
     # log_std_init = trial.suggest_float("log_std_init", -4, 1)
     # Uncomment for gSDE (continuous action)
@@ -150,6 +150,7 @@ def sample_ppo_params_rl_zoo(trial: optuna.Trial) -> dict[str, Any]:
         "tiny": dict(pi=[64], vf=[64]),
         "small": dict(pi=[64, 64], vf=[64, 64]),
         "medium": dict(pi=[256, 256], vf=[256, 256]),
+        "large": dict(pi=[256, 128, 64], vf=[256, 128, 64]),
     }[net_arch_type]
 
     activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLU, "elu": nn.ELU, "leaky_relu": nn.LeakyReLU}[activation_fn]
@@ -219,7 +220,7 @@ def objective(trial: optuna.Trial) -> float:
     # Create the RL model.
     model = PPO(**kwargs)
     # Create env used for evaluation.
-    eval_env = Monitor(gymnasium.make(ENV_ID))
+    eval_env = Monitor(gymnasium.make(ENV_ID, reward=square_v7_env_discrete.REWARD_DENSE))
     # Create the callback that will periodically evaluate and report the performance.
     eval_callback = TrialEvalCallback(
         eval_env, trial, n_eval_episodes=N_EVAL_EPISODES, eval_freq=EVAL_FREQ, deterministic=True

@@ -80,6 +80,10 @@ class BoundingBox:
         """
         Returns whether `other` bounding box is completaly within this bounding box.
         """
+
+        if self is other:
+            return False
+
         x1, y1, w1, h1 = self.get_bb_tl()
         x2, y2, w2, h2 = other.get_bb_tl()
 
@@ -163,4 +167,10 @@ class BoundingBox:
 
         distance = sqrt(dx**2 + dy**2)
         return distance
+    
+    def merge(self, other: 'BoundingBox') -> 'BoundingBox':
+        x1, y1, x2, y2 = self.get_bb_corners()
+        x3, y3, x4, y4 = other.get_bb_corners()
+
+        return BoundingBox((min(x1, x3), min(y1, y3), max(x2, x4), max(y2, y4)), BoundingBoxType.TWO_CORNERS)
 

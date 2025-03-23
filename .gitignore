@@ -5,6 +5,7 @@ ReinforcementLearning/images/*
 ReinforcementLearning/logs/*
 ReinforcementLearning/models/*
 ReinforcementLearning/*.db
+*.jpg
 
 
 # Byte-compiled / optimized / DLL files

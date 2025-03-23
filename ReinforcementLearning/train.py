@@ -6,6 +6,7 @@ import os
 import square_v2_env_discrete
 import square_v5_env_discrete
 import square_v7_env_discrete
+import square_v8_env_discrete
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import datetime
 from stable_baselines3.common.callbacks import EvalCallback
@@ -14,6 +15,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.utils import get_device
 from torch import nn
+from gymnasium.wrappers import TimeLimit
 
 # Custom CNN feature extractor
 class CustomCNN(BaseFeaturesExtractor):
@@ -48,7 +50,7 @@ class CustomCNN(BaseFeaturesExtractor):
         return self.linear(self.cnn(observations))
 
 
-ENV = 'square-v7-discrete'
+ENV = 'square-v8-discrete'
 
 ## Taken from rl-zoo
 def linear_schedule(initial_value: float):
@@ -61,10 +63,14 @@ def custom_schedule(initial_value: float):
     def func(progress_remaining: float) -> float:
         total_timesteps = 10_000_000  # Example: Total training steps
         current_step = int((1 - progress_remaining) * total_timesteps)
-        if current_step < 200_000:
-            return initial_value * (1 - current_step / 200_000)
+        if current_step < 700_000:
+            return initial_value
+        elif current_step < 1_150_000:
+            return initial_value * (1 - (current_step-700_000) / 500_000)
+        elif current_step < 1_600_000:
+            return initial_value * 0.1 * (1 - (current_step-1_150_000) / 500_000)
         else:
-            return initial_value * 0.1  # Hold at 10% of initial value after 200k steps
+            return initial_value * 0.01  # Hold at 10% of initial value after 200k steps
 
     return func
 
@@ -74,33 +80,34 @@ def train():
 
     best_model_path = os.path.join(log_dir, "best_model")
 
-    env = gym.make(ENV, reward=square_v7_env_discrete.REWARD_DENSE)
+    env = gym.make(ENV)
     # Observation space normalization is done by SB3 for CNN
     #env = SubprocVecEnv([lambda: gym.make(ENV) for i in range(8)])
+    env = TimeLimit(env, 1000)
 
     policy_kwargs = dict(
         features_extractor_class=CustomCNN,
         features_extractor_kwargs=dict(features_dim=512),  # Set the output feature dimension of the CNN
-        net_arch=[dict(pi=[256, 256], vf=[256, 256])],     # Actor (pi) and Critic (vf) layers
+        net_arch=[dict(pi=[64], vf=[64])],     # Actor (pi) and Critic (vf) layers
         ortho_init=False,
-        activation_fn=nn.ReLU
+        activation_fn=nn.ELU
     )
 
     model = PPO('CnnPolicy', env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda',
-                batch_size=32,
-                n_steps=2048,
+                batch_size=16,
+                n_steps=1024,
                 gamma=0.99,
-                #learning_rate=custom_schedule(2.6226217364486832e-05),
-                learning_rate = 4.6226217364486832e-06,
-                ent_coef=2.3405243352330302e-05,
-                clip_range=0.3,
-                n_epochs=20,
-                gae_lambda=0.9,
+                learning_rate=custom_schedule(0.00016423904768790543),
+                #learning_rate = 0.00016423904768790543,
+                ent_coef=0.0006023842962159581,
+                clip_range=0.1,
+                n_epochs=5,
+                gae_lambda=0.95,
                 max_grad_norm=0.3,
-                vf_coef=0.8968584303991769,
+                vf_coef=0.5256443638576451,
                 )
-    old_model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v7d_simple_long_my_rf\best_model\best_model.zip", env=env)
-    model.policy.load_state_dict(old_model.policy.state_dict())
+    #old_model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v7d_simple_long_my_rf\best_model\best_model.zip", env=env)
+    #model.policy.load_state_dict(old_model.policy.state_dict())
     print(model.policy)
     print(sum(p.numel() for p in model.policy.parameters()))
 
@@ -111,7 +118,7 @@ def train():
         eval_freq=10000,  # Evaluate every 10000 steps
         deterministic=True,
         render=False,
-        n_eval_episodes=100,
+        n_eval_episodes=20,
         verbose=1
     )
 
