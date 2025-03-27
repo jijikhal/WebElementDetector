@@ -37,7 +37,7 @@ def process(img: MatLike) -> MatLike:
 
     input = cv2.resize(big_close, (100, 100), interpolation=cv2.INTER_NEAREST)
 
-    cv2.imshow("smaller", cv2.resize(input, (1440, 900), interpolation=cv2.INTER_NEAREST))
+    cv2.imshow("smaller", cv2.resize(input, (500, 500), interpolation=cv2.INTER_NEAREST))
     #cv2.imshow("smaller", input)
     return big_close
 

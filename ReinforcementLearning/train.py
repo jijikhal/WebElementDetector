@@ -63,10 +63,10 @@ def custom_schedule(initial_value: float):
     def func(progress_remaining: float) -> float:
         total_timesteps = 10_000_000  # Example: Total training steps
         current_step = int((1 - progress_remaining) * total_timesteps)
-        if current_step < 700_000:
+        if current_step < 500_000:
             return initial_value
         elif current_step < 1_150_000:
-            return initial_value * (1 - (current_step-700_000) / 500_000)
+            return initial_value * (1 - (current_step-500_000) / 700_000)
         elif current_step < 1_600_000:
             return initial_value * 0.1 * (1 - (current_step-1_150_000) / 500_000)
         else:
@@ -90,24 +90,24 @@ def train():
         features_extractor_kwargs=dict(features_dim=512),  # Set the output feature dimension of the CNN
         net_arch=[dict(pi=[64], vf=[64])],     # Actor (pi) and Critic (vf) layers
         ortho_init=False,
-        activation_fn=nn.ELU
+        activation_fn=nn.Tanh
     )
 
     model = PPO('CnnPolicy', env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda',
                 batch_size=16,
-                n_steps=1024,
-                gamma=0.99,
-                learning_rate=custom_schedule(0.00016423904768790543),
-                #learning_rate = 0.00016423904768790543,
-                ent_coef=0.0006023842962159581,
-                clip_range=0.1,
-                n_epochs=5,
-                gae_lambda=0.95,
-                max_grad_norm=0.3,
-                vf_coef=0.5256443638576451,
+                n_steps=512,
+                gamma=0.999,
+                #learning_rate=custom_schedule(1.4574739503669995e-05),
+                learning_rate = 1.4574739503669995e-05,
+                ent_coef=0.020703228695866868,
+                clip_range=0.2,
+                n_epochs=1,
+                gae_lambda=0.9,
+                max_grad_norm=5,
+                vf_coef=0.5166916594409315,
                 )
-    #old_model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v7d_simple_long_my_rf\best_model\best_model.zip", env=env)
-    #model.policy.load_state_dict(old_model.policy.state_dict())
+    old_model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250323-233638\best_model\best_model.zip", env=env)
+    model.policy.load_state_dict(old_model.policy.state_dict())
     print(model.policy)
     print(sum(p.numel() for p in model.policy.parameters()))
 

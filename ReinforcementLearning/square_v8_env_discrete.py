@@ -233,10 +233,10 @@ class SquareEnv(gymnasium.Env):
             return self.view
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v8-discrete', render_mode='none')
+    env = gymnasium.make('square-v8-discrete', render_mode='human', height = 100, width = 100)
 
     print("check begin")
-    check_env(env)
+    #check_env(env)
     print("check end")
 
     """total = 0
@@ -250,6 +250,7 @@ if __name__ == "__main__":
     obs = env.reset(seed=1)[0]
 
     for i in range(1000):
+        env.reset()
         rand_action = env.action_space.sample()
         print(rand_action)
         obs, reward, terminated, _, _ = env.step(rand_action)
