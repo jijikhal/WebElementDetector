@@ -39,6 +39,7 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
         x,y,w,h = cv2.boundingRect(c)
         if cv2.contourArea(cv2.boxPoints(cv2.minAreaRect(c)))/(w*h) < 0.75:
             cv2.rectangle(copy_for_show, (x, y), (x + w + 1, y + h + 1), (255, 0, 255), 1)
+            small_trash.append(BoundingBox((x/img_w, y/img_h, (w+1)/img_w, (h+1)/img_h), BoundingBoxType.TOP_LEFT))
             continue
         if (min(w,h) < 10 or max(w, h) < 20):
             cv2.rectangle(copy_for_show, (x, y), (x + w + 1, y + h + 1), (53, 132, 242), 1)
@@ -47,7 +48,7 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
         result.append(BoundingBox((x/img_w, y/img_h, (w+1)/img_w, (h+1)/img_h), BoundingBoxType.TOP_LEFT))
         cv2.rectangle(copy_for_show, (x, y), (x + w + 1, y + h + 1), (255, 0, 0), 2)
 
-    merged: list[BoundingBox] = []
+    merged: list[BoundingBox] = [BoundingBox((0,0,1,1), BoundingBoxType.TOP_LEFT)]
     used = set()
     result.sort(key=lambda x: x.area())
     for b in result:
@@ -63,9 +64,18 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
 
     for b in merged:
         x1, y1, x2, y2 = b.get_bb_corners()
-        #cv2.rectangle(copy_for_show, (round(x1*img_w), round(y1*img_h)), (round(x2*img_w), round(y2*img_h)), (255, 0, 0), 2)
-
+        #cv2.rectangle(copy_for_show, (round(x1*img_w), round(y1*img_h)), (round(x2*img_w), round(y2*img_h)), (255, 255, 0), 2)
     merged.sort(key=lambda x: x.area(), reverse=True)
+
+    trash_count: dict[BoundingBox, int] = {x:0 for x in merged}
+    for t in small_trash:
+        parent = min([x for x in merged if x.fully_contains(t)], key=lambda x: x.area())
+        trash_count[parent] += 1
+
+    for m in merged:
+        if trash_count[m] > 10:
+            x, y, w, h = m.get_bb_tl()
+            cv2.rectangle(copy_for_show, m.get_rect(img_w, img_h), (0, 0, 255), 2)
 
     cv2.imshow("img", copy_for_show)
     
@@ -73,7 +83,7 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
     return merged
 
 if __name__ == "__main__":
-    dataset_folder = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\dataset_big"
+    dataset_folder = r"C:\Users\halabala\Documents\GitHub\WebElementDetector\ReinforcementLearning\dataset_big"
     paths = [join(dataset_folder, f) for f in listdir(dataset_folder) if isfile(join(dataset_folder, f))]
     for p in paths:
         img = cv2.imread(p)
