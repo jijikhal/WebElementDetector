@@ -6,7 +6,7 @@ from random import randint
 from time import time
 
 ENV = 'square-v8-discrete'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250327-115651\best_model\best_model.zip"
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v7d-harder-tunned-3lr\best_model\best_model.zip"
 
 env = gym.make(ENV, width=100, height=100, render_mode='none')
 model = PPO.load(MODEL)

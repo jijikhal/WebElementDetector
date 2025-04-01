@@ -29,12 +29,12 @@ def train():
 
     best_model_path = os.path.join(log_dir, "best_model")
 
-    n_envs = 1
+    n_envs = 4
     env = gym.make(ENV, width=84, height=84)
     vec_env = SubprocVecEnv([lambda: TimeLimit(env, max_episode_steps=1000) for _ in range(n_envs)])
     vec_env = VecMonitor(vec_env)
     vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True)
-    vec_env = VecFrameStack(vec_env, 2)
+    vec_env = VecFrameStack(vec_env, 4, "first")
 
     policy_kwargs = dict(
         net_arch=[dict(pi=[512], vf=[512])],     # Actor (pi) and Critic (vf) layers
@@ -66,7 +66,7 @@ def train():
         verbose=1,
     )
 
-    model.learn(total_timesteps=10_000_000, callback=eval_callback)
+    model.learn(total_timesteps=10_000_000, callback=eval_callback, log_interval=10)
     vec_env.save(os.path.join(log_dir, "vec_normalize.pkl"))
 
 if __name__ == '__main__':
