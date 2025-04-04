@@ -11,10 +11,18 @@ import datetime
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecFrameStack, SubprocVecEnv, VecMonitor
+from sb3_contrib import RecurrentPPO
 from torch import nn
 from gymnasium.wrappers import TimeLimit
+import math
 
 ENV = 'square-v8-discrete'
+
+def exp_schedule(initial_value: float):
+    def func(progress_remaining: float) -> float:
+        return math.exp(-2*(1-progress_remaining))*initial_value*0.6
+
+    return func
 
 ## Taken from rl-zoo
 def linear_schedule(initial_value: float):
@@ -23,18 +31,23 @@ def linear_schedule(initial_value: float):
 
     return func
 
+def make_env():
+    def _init():
+        env = gym.make(ENV, width=84, height=84)
+        env = TimeLimit(env, max_episode_steps=1000)
+        return env
+    return _init
+
 def train():
     log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     #os.makedirs(log_dir, exist_ok=True)
 
     best_model_path = os.path.join(log_dir, "best_model")
 
-    n_envs = 4
-    env = gym.make(ENV, width=84, height=84)
-    vec_env = SubprocVecEnv([lambda: TimeLimit(env, max_episode_steps=1000) for _ in range(n_envs)])
+    n_envs = 8
+    vec_env = SubprocVecEnv([make_env() for _ in range(n_envs)])
     vec_env = VecMonitor(vec_env)
-    vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True)
-    vec_env = VecFrameStack(vec_env, 4, "first")
+    vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=False)
 
     policy_kwargs = dict(
         net_arch=[dict(pi=[512], vf=[512])],     # Actor (pi) and Critic (vf) layers
@@ -42,9 +55,9 @@ def train():
         normalize_images=False
     )
 
-    model = PPO('CnnPolicy', vec_env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda',
+    model = RecurrentPPO('CnnLstmPolicy', vec_env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda',
                 batch_size=512,
-                n_steps=128,
+                n_steps=256,
                 gamma=0.999,
                 learning_rate = linear_schedule(2.5e-4),
                 ent_coef=0.01,
@@ -55,8 +68,13 @@ def train():
                 )
     print(sum(p.numel() for p in model.policy.parameters()))
 
+    eval_env = DummyVecEnv([make_env()])
+    eval_env = VecMonitor(eval_env)
+    eval_env = VecNormalize(eval_env, training=False, norm_obs=True, norm_reward=False)
+    eval_env.obs_rms = vec_env.obs_rms
+
     eval_callback = EvalCallback(
-        vec_env,
+        eval_env,
         best_model_save_path=best_model_path,
         log_path=log_dir,
         eval_freq=10000,  # Evaluate every 10000 steps
@@ -66,7 +84,7 @@ def train():
         verbose=1,
     )
 
-    model.learn(total_timesteps=10_000_000, callback=eval_callback, log_interval=10)
+    model.learn(total_timesteps=20_000_000, callback=eval_callback, log_interval=10)
     vec_env.save(os.path.join(log_dir, "vec_normalize.pkl"))
 
 if __name__ == '__main__':

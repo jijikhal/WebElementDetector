@@ -165,9 +165,9 @@ class SquareEnv(gymnasium.Env):
         bbs.sort(key=lambda x: x.iou(guess), reverse=True)
 
         best_bb = bbs[0]
-        max_iou = best_bb.iou(guess) if len(self.ground_truth_labels) == 1 else bbs[1].iou(guess)
-
         best_is_root = best_bb is self.ground_truth_labels[0]
+
+        max_iou = best_bb.iou(guess) if best_is_root else bbs[1].iou(guess)
 
         if stop:
             self.ground_truth_labels.remove(best_bb)
@@ -177,9 +177,10 @@ class SquareEnv(gymnasium.Env):
             return max_iou*3, best_is_root
             
         diff = max_iou - self.last_reward
-        self.last_reward = max_iou 
-
-        return diff, False
+        if diff > 0:
+            self.last_reward = max(self.last_reward, max_iou)
+            return diff, False
+        return 0, False
 
     def step(self, action):
         self.steps -= 1
