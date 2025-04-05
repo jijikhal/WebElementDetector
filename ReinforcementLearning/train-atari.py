@@ -55,7 +55,7 @@ def train():
         normalize_images=False
     )
 
-    model = RecurrentPPO('CnnLstmPolicy', vec_env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda',
+    model = PPO('CnnPolicy', vec_env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda',
                 batch_size=512,
                 n_steps=256,
                 gamma=0.999,
