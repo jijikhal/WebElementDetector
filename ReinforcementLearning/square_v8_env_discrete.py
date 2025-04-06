@@ -2,7 +2,6 @@ import random
 import gymnasium
 from gymnasium import spaces
 from gymnasium.envs.registration import register
-from sympy import use
 from bounding_box import BoundingBox, RectF, RectI, BoundingBoxType
 import numpy as np
 import cv2
@@ -91,6 +90,8 @@ class SquareEnv(gymnasium.Env):
         self.view: list[float] = [0.0, 0.0, 1.0, 1.0]
         self.last_reward = 0
         self.preprocessed: MatLike | None = None
+        self.reward_archive: list[float] = []
+        self.max_bbs = 3
 
         self.action_space = spaces.Discrete(9)
         self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
@@ -102,12 +103,22 @@ class SquareEnv(gymnasium.Env):
 
         path = random.choice(self.image_paths)
         self.base_img = cv2.imread(path)
-        self.ground_truth_labels = find_bounding_boxes(self.base_img)
         self.steps = len(self.ground_truth_labels)*30
         self.view = [0, 0, 1, 1]
         self.last_reward = 0
         self.guesses = []
         self.preprocessed = None
+
+        # Curriculum learning
+        if (len(self.reward_archive) >= 100):
+            avg = sum(self.reward_archive)/len(self.reward_archive)
+            if (avg > 0.7):
+                self.max_bbs += 1
+                print(f"Increased difficulty to {self.max_bbs}")
+            self.reward_archive = []
+
+
+        self.ground_truth_labels = find_bounding_boxes(self.base_img)[:self.max_bbs]
 
         obs = self.get_observation()
         info = {}
@@ -161,26 +172,29 @@ class SquareEnv(gymnasium.Env):
 
         guess = BoundingBox(rect, BoundingBoxType.CENTER)
 
-        bbs = self.ground_truth_labels.copy()
-        bbs.sort(key=lambda x: x.iou(guess), reverse=True)
+        overlaping = [x for x in self.ground_truth_labels if x.has_overlap(guess)]
+        leaves = [x for x in overlaping if not any([x.fully_contains(y) for y in overlaping])]
 
-        best_bb = bbs[0]
+        if (len(leaves) == 0):
+            print(self.ground_truth_labels, self.view)
+
+        leaves.sort(key=lambda x: x.iou(guess), reverse=True)
+
+        best_bb = leaves[0]
+        max_iou = best_bb.iou(guess)
         best_is_root = best_bb is self.ground_truth_labels[0]
-
-        max_iou = best_bb.iou(guess) if best_is_root else bbs[1].iou(guess)
 
         if stop:
             self.ground_truth_labels.remove(best_bb)
             x1, y1, x2, y2 = best_bb.get_bb_corners()
             img_h, img_w, _ = self.base_img.shape
             self.preprocessed[round(y1*img_h):round(y2*img_h), round(x1*img_w):round(x2*img_w)] = 0
+            self.reward_archive.append(max_iou)
             return max_iou*3, best_is_root
             
         diff = max_iou - self.last_reward
-        if diff > 0:
-            self.last_reward = max(self.last_reward, max_iou)
-            return diff, False
-        return 0, False
+        self.last_reward = max_iou
+        return diff, False
 
     def step(self, action):
         self.steps -= 1
@@ -234,10 +248,10 @@ class SquareEnv(gymnasium.Env):
             return self.view
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v8-discrete', render_mode='human', height = 100, width = 100)
+    env = gymnasium.make('square-v8-discrete', render_mode='none', height = 100, width = 100)
 
     print("check begin")
-    #check_env(env)
+    check_env(env)
     print("check end")
 
     """total = 0
@@ -251,10 +265,9 @@ if __name__ == "__main__":
     obs = env.reset(seed=1)[0]
 
     for i in range(1000):
-        env.reset()
         rand_action = env.action_space.sample()
         print(rand_action)
         obs, reward, terminated, _, _ = env.step(rand_action)
         print(reward, terminated)
         if (terminated):
-            break
+            obs = env.reset(seed=1)[0]

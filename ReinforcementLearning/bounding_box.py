@@ -87,6 +87,9 @@ class BoundingBox:
         x1, y1, w1, h1 = self.get_bb_tl()
         x2, y2, w2, h2 = other.get_bb_tl()
 
+        if (abs(x1-x2) < 0.01 and abs(y1-y2) < 0.01 and abs(w1-w2) < 0.01 and abs(h1-h2) < 0.01):
+            return False
+
         return x1 <= x2 and y1 <= y2 and x1+w1 >= x2+w2 and y1+h1 >= y2+h2
     
     def area(self) -> float:

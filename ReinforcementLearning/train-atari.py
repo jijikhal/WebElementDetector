@@ -44,7 +44,7 @@ def train():
 
     best_model_path = os.path.join(log_dir, "best_model")
 
-    n_envs = 8
+    n_envs = 6
     vec_env = SubprocVecEnv([make_env() for _ in range(n_envs)])
     vec_env = VecMonitor(vec_env)
     vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=False)
