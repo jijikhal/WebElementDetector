@@ -31,9 +31,9 @@ def linear_schedule(initial_value: float):
 
     return func
 
-def make_env():
+def make_env(name):
     def _init():
-        env = gym.make(ENV, width=84, height=84)
+        env = gym.make(ENV, width=84, height=84, name=name)
         env = TimeLimit(env, max_episode_steps=1000)
         return env
     return _init
@@ -45,7 +45,7 @@ def train():
     best_model_path = os.path.join(log_dir, "best_model")
 
     n_envs = 6
-    vec_env = SubprocVecEnv([make_env() for _ in range(n_envs)])
+    vec_env = SubprocVecEnv([make_env(f"Train env {i}") for i in range(n_envs)])
     vec_env = VecMonitor(vec_env)
     vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=False)
 
@@ -68,7 +68,7 @@ def train():
                 )
     print(sum(p.numel() for p in model.policy.parameters()))
 
-    eval_env = DummyVecEnv([make_env()])
+    eval_env = DummyVecEnv([make_env("Eval env")])
     eval_env = VecMonitor(eval_env)
     eval_env = VecNormalize(eval_env, training=False, norm_obs=True, norm_reward=False)
     eval_env.obs_rms = vec_env.obs_rms

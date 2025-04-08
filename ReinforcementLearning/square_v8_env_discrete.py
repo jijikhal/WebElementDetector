@@ -1,4 +1,5 @@
 import random
+from tracemalloc import start
 import gymnasium
 from gymnasium import spaces
 from gymnasium.envs.registration import register
@@ -11,6 +12,7 @@ import bounding_box
 from os import listdir
 from os.path import isfile, join
 from time import time
+import datetime
 
 register(
     id='square-v8-discrete',
@@ -76,22 +78,23 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
     return merged
 
 class SquareEnv(gymnasium.Env):
-    metadata = {'render_modes': ['human','none'], 'render_fps':1} 
-    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = "dataset_big") -> None:
+    metadata = {'render_modes': ['human','none', 'rgb_array_list', 'rgb_array']} 
+    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = "dataset_big", start_rects: int = 3, name: str = "env") -> None:
         super().__init__()
         self.height: int = height
         self.width: int = width
         self.render_mode = render_mode
-        self.steps: int = 0
         self.image_paths = [join(dataset_folder, f) for f in listdir(dataset_folder) if isfile(join(dataset_folder, f))]
-        self.base_img = cv2.imread(random.choice(self.image_paths))
-        self.ground_truth_labels: list[BoundingBox] = []
-        self.trash: list[BoundingBox] = []
+        self.base_img_path = random.choice(self.image_paths)
+        self.base_img = cv2.imread(self.base_img_path)
+        self.max_bbs = start_rects
+        self.ground_truth_labels: list[BoundingBox] = find_bounding_boxes(self.base_img)[:self.max_bbs]
         self.view: list[float] = [0.0, 0.0, 1.0, 1.0]
         self.last_reward = 0
-        self.preprocessed: MatLike | None = None
+        self.preprocessed: MatLike = self._preprocess_img()
         self.reward_archive: list[float] = []
-        self.max_bbs = 3
+        self.current_best_bb = None
+        self.name = name
 
         self.action_space = spaces.Discrete(9)
         self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
@@ -101,24 +104,30 @@ class SquareEnv(gymnasium.Env):
         random.seed(seed)
         np.random.seed(seed)
 
-        path = random.choice(self.image_paths)
-        self.base_img = cv2.imread(path)
-        self.steps = len(self.ground_truth_labels)*30
+        self.base_img_path = random.choice(self.image_paths)
+        self.base_img = cv2.imread(self.base_img_path)
         self.view = [0, 0, 1, 1]
-        self.last_reward = 0
-        self.guesses = []
-        self.preprocessed = None
 
         # Curriculum learning
         if (len(self.reward_archive) >= 100):
             avg = sum(self.reward_archive)/len(self.reward_archive)
             if (avg > 0.7):
                 self.max_bbs += 1
-                print(f"Increased difficulty to {self.max_bbs}")
+                print(f"Increased difficulty of env {self.name} to {self.max_bbs}")
+                try:
+                    with open("difficulty_log.txt", "a") as f:
+                        f.write(f"Increased difficulty of env {self.name} to {self.max_bbs} at {datetime.datetime.now().strftime('%Y%m%d-%H%M%')}\n")
+                except:
+                    pass
+
             self.reward_archive = []
 
 
         self.ground_truth_labels = find_bounding_boxes(self.base_img)[:self.max_bbs]
+        self.preprocessed = self._preprocess_img()
+
+        self.last_reward = 0
+        self.last_reward = self.calculate_reward_dense(BoundingBox(self.view, BoundingBoxType.TWO_CORNERS), False)[0]
 
         obs = self.get_observation()
         info = {}
@@ -128,18 +137,15 @@ class SquareEnv(gymnasium.Env):
 
         return obs, info
     
+    def _preprocess_img(self) -> MatLike:
+        img_h, img_w, _ = self.base_img.shape
+        img = np.zeros((img_h, img_w), dtype=np.uint8)
+        for l in self.ground_truth_labels:
+            x1, y1, x2, y2 = l.get_bb_corners()
+            cv2.rectangle(img, (round(x1*img_w), round(y1*img_h)), (round(x2*img_w)-1, round(y2*img_h)-1), (255,), 1)
+        return img
+    
     def get_observation(self) -> MatLike:
-        if self.preprocessed is None:
-            img_h, img_w, _ = self.base_img.shape
-            img = np.zeros((img_h, img_w), dtype=np.uint8)
-            for l in self.ground_truth_labels:
-                x1, y1, x2, y2 = l.get_bb_corners()
-                cv2.rectangle(img, (round(x1*img_w), round(y1*img_h)), (round(x2*img_w)-1, round(y2*img_h)-1), (255,), 1)
-            self.preprocessed = img
-
-        #cv2.imshow("lol", self.preprocessed)
-
-        closing = self.preprocessed
         img_h, img_w, _ = self.base_img.shape
 
         # Calculate area so that it is always at least 1x1 pixels in a valid spot
@@ -161,28 +167,50 @@ class SquareEnv(gymnasium.Env):
                 y2 += 2
             else:
                 y2 +=2
-        view_cutout = closing[y1:y2, x1:x2]
-        view_scaled = cv2.resize(view_cutout, (self.width, self.height), interpolation=cv2.INTER_AREA)
-        view_scaled[view_scaled > 0] = 255
+        view_cutout = self.preprocessed[y1:y2, x1:x2]
+        view_scaled = self._scaling(view_cutout, self.width, self.height)
 
         # Convert to channel-first format. See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
         return np.expand_dims(view_scaled, axis=0)
     
-    def calculate_reward_dense(self, rect: RectF, stop: bool) -> tuple[float, bool]:
+    def _scaling(self, img: MatLike, width, height):
+        """Special rescaling method that ensures no lines are lost"""
+        h, w = img.shape[:2]
+        if width > w:
+            interp_x = cv2.INTER_NEAREST
+        else:
+            interp_x = cv2.INTER_AREA
 
-        guess = BoundingBox(rect, BoundingBoxType.CENTER)
+        img_x_scaled = cv2.resize(img, (width, h), interpolation=interp_x)
+        img_x_scaled[img_x_scaled > 0] = 255
 
-        overlaping = [x for x in self.ground_truth_labels if x.has_overlap(guess)]
+        if height > h:
+            interp_y = cv2.INTER_NEAREST
+        else:
+            interp_y = cv2.INTER_AREA
+
+        img_final = cv2.resize(img_x_scaled, (width, height), interpolation=interp_y)
+        img_final[img_final > 0] = 255
+        return img_final
+
+
+    
+    def calculate_reward_dense(self, rect: BoundingBox, stop: bool) -> tuple[float, bool]:
+
+        overlaping = [x for x in self.ground_truth_labels if x.has_overlap(rect)]
         leaves = [x for x in overlaping if not any([x.fully_contains(y) for y in overlaping])]
 
         if (len(leaves) == 0):
             print(self.ground_truth_labels, self.view)
+            # This can happen in same very rare edge cases when two lines are on top of one another
+            leaves = overlaping
 
-        leaves.sort(key=lambda x: x.iou(guess), reverse=True)
+        leaves.sort(key=lambda x: x.iou(rect), reverse=True)
 
         best_bb = leaves[0]
-        max_iou = best_bb.iou(guess)
+        max_iou = best_bb.iou(rect)
         best_is_root = best_bb is self.ground_truth_labels[0]
+        self.current_best_bb = best_bb
 
         if stop:
             self.ground_truth_labels.remove(best_bb)
@@ -197,7 +225,6 @@ class SquareEnv(gymnasium.Env):
         return diff, False
 
     def step(self, action):
-        self.steps -= 1
         width = self.view[2]-self.view[0]
         heigth = self.view[3]-self.view[1]
         if action == SHRINK_LEFT:
@@ -218,40 +245,56 @@ class SquareEnv(gymnasium.Env):
             self.view[3] = self.view[3] - heigth*0.025
         obs = self.get_observation()
 
-        reward, terminated = 0, False
+        reward, terminated, info = 0, False, {'view':self.view}
 
         bb = BoundingBox(self.view, BoundingBoxType.TWO_CORNERS)
 
         if action == STOP:
-            reward, terminated = self.calculate_reward_dense(bb.get_bb_middle(), True)
+            reward, terminated = self.calculate_reward_dense(bb, True)
             self.view = [0, 0, 1, 1]
-            self.last_reward = 0
+            if not terminated:
+                self.last_reward = self.calculate_reward_dense(BoundingBox(self.view, BoundingBoxType.TWO_CORNERS), False)[0]
             if (self.render_mode == 'human'):
                 self.render()
-            return self.get_observation(), reward, terminated, False, {}
+            return self.get_observation(), reward, terminated, False, info
         else:
-            reward, terminated = self.calculate_reward_dense(bb.get_bb_middle(), False)
+            reward, terminated = self.calculate_reward_dense(bb, False)
 
 
         if (self.render_mode == 'human'):
             self.render()
 
-        return obs, reward, terminated, self.steps <= 0, {}
+        return obs, reward, terminated, False, info
     
     def render(self):
+        if self.render_mode == 'none' or self.render_mode is None:
+            return
+        obs = self.get_observation()[0]
+        img = cv2.cvtColor(self.preprocessed, cv2.COLOR_GRAY2BGR)
+        img_h, img_w, _ = img.shape
+        view_rect = BoundingBox(self.view, BoundingBoxType.TWO_CORNERS).get_rect(img_w, img_h)
+        best_bb_rect = self.current_best_bb.get_rect(img_w, img_h)
+        cv2.rectangle(img, view_rect, (0, 0, 255), 1)
+        cv2.rectangle(img, best_bb_rect, (255, 0, 0), 1)
+        scaled_obs = cv2.resize(obs, (500, 500), interpolation=cv2.INTER_NEAREST)
         if self.render_mode == 'human':
-            view = self.get_observation()[0]
-            show = cv2.resize(view, (500, 500), interpolation=cv2.INTER_NEAREST)
-            cv2.imshow("square-v5-discrete render", show)
-            cv2.waitKey(0)
-        else:
-            return self.view
+            cv2.imshow("Observation", scaled_obs)
+            cv2.imshow("Current selection", img)
+            cv2.waitKey(1)
+            return
+        if self.render_mode == "rgb_array":
+            return img
+        if self.render_mode == "rgb_array_list":
+            return [img, scaled_obs]
+        
+    def close(self):
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v8-discrete', render_mode='none', height = 100, width = 100)
+    env = gymnasium.make('square-v8-discrete', render_mode='human', height = 84, width = 84, start_rects = 100)
 
     print("check begin")
-    check_env(env)
+    #check_env(env)
     print("check end")
 
     """total = 0
@@ -270,4 +313,5 @@ if __name__ == "__main__":
         obs, reward, terminated, _, _ = env.step(rand_action)
         print(reward, terminated)
         if (terminated):
-            obs = env.reset(seed=1)[0]
+            cv2.waitKey(0)
+            obs = env.reset()[0]

@@ -12,12 +12,12 @@ import square_v8_env_discrete
 import numpy as np
 
 ENV = 'square-v8-discrete'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250405-010412\best_model\best_model.zip"
-NORM = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250405-010412\vec_normalize.pkl"
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250406-174350\best_model\best_model.zip"
+NORM = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250406-174350\vec_normalize.pkl"
 
 # Recreate the environment
 def make_env():
-    env = gym.make(ENV, width=84, height=84, render_mode='none')  # Use the same ENV as training
+    env = gym.make(ENV, width=84, height=84, render_mode='none', start_rects=100)  # Use the same ENV as training
     env = TimeLimit(env, max_episode_steps=1000)
     return env
 
@@ -31,7 +31,7 @@ vec_env.training = False
 vec_env.norm_reward = False
 
 # Load the trained model
-model = RecurrentPPO.load(MODEL, env=vec_env, device='cuda')
+model = PPO.load(MODEL, env=vec_env, device='cuda')
 
 for i in range(10):
     obs = vec_env.reset()
@@ -50,16 +50,16 @@ for i in range(10):
     steps = 0
     while not terminated:
         steps += 1
-        action, inner_state = model.predict(obs, state=inner_state, deterministic=True)
+        action, inner_state = model.predict(obs, state=inner_state, deterministic=False)
         if (steps > 30):
             action = np.array([STOP])
         bbox = vec_env.envs[0].unwrapped.view
         obs, reward, terminated, _ = vec_env.step(action)
         if (action[0] == STOP):
-            cv2.rectangle(image, (int(bbox[0]*width), int(bbox[1]*height)), (int(bbox[2]*width), int(bbox[3]*height)), (0, int(255*max(0, reward/3)), int(255*(1-max(0, reward/3)))))
+            cv2.rectangle(image, (int(bbox[0]*width), int(bbox[1]*height)), (int(bbox[2]*width), int(bbox[3]*height)), (0, int(255*max(0, reward[0]/3)), int(255*(1-max(0, reward[0]/3)))))
             steps = 0
             print(reward)
-            print(bbox)
+            #print(bbox)
 
     print("Took:", time()-start)
 

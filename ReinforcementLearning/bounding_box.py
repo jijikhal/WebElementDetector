@@ -129,7 +129,7 @@ class BoundingBox:
         """
         Returns whether two bounding boxes have any overlap
         """
-        return self.overlap(other) > 0.0001
+        return self.overlap(other) > 0
     
     def iou(self, other: 'BoundingBox') -> float:
         """
