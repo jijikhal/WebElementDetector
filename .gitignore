@@ -3,6 +3,7 @@ runs/
 *.pt
 ReinforcementLearning/images/*
 ReinforcementLearning/logs/*
+ReinforcementLearning/graphs/*
 ReinforcementLearning/models/*
 ReinforcementLearning/*.db
 *.jpg
