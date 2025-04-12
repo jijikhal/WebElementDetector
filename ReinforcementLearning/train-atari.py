@@ -7,6 +7,7 @@ import square_v2_env_discrete
 import square_v5_env_discrete
 import square_v7_env_discrete
 import square_v8_env_discrete
+from square_v8_env_discrete import STATE_IMAGE_AND_VIEW, STATE_IMAGE_ONLY
 import datetime
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3 import PPO
@@ -15,6 +16,7 @@ from sb3_contrib import RecurrentPPO
 from torch import nn
 from gymnasium.wrappers import TimeLimit
 import math
+from combined_feature_extractor import CustomCombinedExtractor
 
 ENV = 'square-v8-discrete'
 
@@ -45,17 +47,18 @@ def train():
     best_model_path = os.path.join(log_dir, "best_model")
 
     n_envs = 6
-    vec_env = SubprocVecEnv([make_env(name=f"Train env {i}", start_rects=3) for i in range(n_envs)])
+    vec_env = SubprocVecEnv([make_env(name=f"Train env {i}", start_rects=3, state_type=STATE_IMAGE_AND_VIEW) for i in range(n_envs)])
     vec_env = VecMonitor(vec_env)
-    vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=False)
+    #vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=False)
 
     policy_kwargs = dict(
         net_arch=[dict(pi=[512], vf=[512])],     # Actor (pi) and Critic (vf) layers
         activation_fn=nn.ReLU,
-        normalize_images=False
+        normalize_images=False,
+        features_extractor_class=CustomCombinedExtractor,
     )
 
-    model = PPO('CnnPolicy', vec_env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda',
+    model = PPO('MultiInputPolicy', vec_env, policy_kwargs=policy_kwargs, verbose=True, tensorboard_log=log_dir, device='cuda',
                 batch_size=512,
                 n_steps=256,
                 gamma=0.999,
@@ -68,10 +71,10 @@ def train():
                 )
     print(sum(p.numel() for p in model.policy.parameters()))
 
-    eval_env = DummyVecEnv([make_env(name="Eval env", start_rects=1000)])
+    eval_env = DummyVecEnv([make_env(name="Eval env", start_rects=1000, state_type=STATE_IMAGE_AND_VIEW)])
     eval_env = VecMonitor(eval_env)
-    eval_env = VecNormalize(eval_env, training=False, norm_obs=True, norm_reward=False)
-    eval_env.obs_rms = vec_env.obs_rms
+    #eval_env = VecNormalize(eval_env, training=False, norm_obs=True, norm_reward=False)
+    #eval_env.obs_rms = vec_env.obs_rms
 
     eval_callback = EvalCallback(
         eval_env,
@@ -85,7 +88,7 @@ def train():
     )
 
     model.learn(total_timesteps=20_000_000, callback=eval_callback, log_interval=10)
-    vec_env.save(os.path.join(log_dir, "vec_normalize.pkl"))
+    #vec_env.save(os.path.join(log_dir, "vec_normalize.pkl"))
 
 if __name__ == '__main__':
     train()

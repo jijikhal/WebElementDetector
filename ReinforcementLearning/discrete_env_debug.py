@@ -1,6 +1,6 @@
 import gymnasium as gym
 import square_v8_env_discrete
-from square_v8_env_discrete import SHRINK_LEFT, SHRINK_LEFT_SMALL, SHRINK_BOTTOM, SHRINK_BOTTOM_SMALL, SHRINK_RIGHT, SHRINK_RIGHT_SMALL, SHRINK_TOP, SHRINK_TOP_SMALL, STOP
+from square_v8_env_discrete import SHRINK_LEFT, SHRINK_LEFT_SMALL, SHRINK_BOTTOM, SHRINK_BOTTOM_SMALL, SHRINK_RIGHT, SHRINK_RIGHT_SMALL, SHRINK_TOP, SHRINK_TOP_SMALL, STOP, STATE_IMAGE_AND_VIEW, STATE_IMAGE_ONLY
 import cv2
 
 ENV = 'square-v8-discrete'
@@ -29,7 +29,7 @@ ACTION_MAPPING = {
 }
 
 def main():
-    env = gym.make(ENV, width=84, height=84, render_mode='rgb_array_list', start_rects = 1000)
+    env = gym.make(ENV, width=84, height=84, render_mode='rgb_array_list', start_rects = 1000, state_type=STATE_IMAGE_AND_VIEW)
     while True:  # Episode loop
         print("New episode started")
         obs, info = env.reset()
@@ -37,7 +37,10 @@ def main():
         while not terminated:  # Step loop
             whole_render, obs_render = env.render()
             cv2.imshow("Observation Scaled", obs_render)
-            cv2.imshow("Observation", obs[0])
+            if (isinstance(obs, dict)):
+                cv2.imshow("Observation", obs["image"][0])
+            else:
+                cv2.imshow("Observation", obs[0])
             cv2.imshow("Current selection", whole_render)
             key_pressed = cv2.waitKeyEx(0)
             if (key_pressed == ESC):

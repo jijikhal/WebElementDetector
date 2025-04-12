@@ -29,6 +29,9 @@ SHRINK_TOP_SMALL = 6
 SHRINK_BOTTOM_SMALL = 7
 STOP = 8
 
+STATE_IMAGE_ONLY = 0
+STATE_IMAGE_AND_VIEW = 1
+
 def draw_rect(bb: RectI, image: MatLike) -> None:
     x, y, w, h = bb
     cv2.rectangle(image, (x, y), (x+w-1, y+h-1), (255,), 1)
@@ -42,9 +45,9 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
     big_count, _, big_stats, _ = cv2.connectedComponentsWithStats(big_close, connectivity=8)
     img_h, img_w, _ = img.shape
 
-    result: list[BoundingBox] = []
+    result: list[BoundingBox] = [BoundingBox((0, 0, 1, 1), BoundingBoxType.TWO_CORNERS)]
 
-    for i in range(0, big_count):
+    for i in range(1, big_count):
         x, y, w, h, area = big_stats[i]
         if (min(w,h) < 10 or max(w, h) < 20):
             cv2.rectangle(copy_for_show, (x, y), (x + w + 1, y + h + 1), (0, 0, 255), 1)
@@ -79,7 +82,7 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
 
 class SquareEnv(gymnasium.Env):
     metadata = {'render_modes': ['human','none', 'rgb_array_list', 'rgb_array']} 
-    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = "dataset_big", start_rects: int = 3, name: str = "env") -> None:
+    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = "dataset_big", start_rects: int = 3, name: str = "env", state_type = STATE_IMAGE_ONLY) -> None:
         super().__init__()
         self.height: int = height
         self.width: int = width
@@ -95,9 +98,18 @@ class SquareEnv(gymnasium.Env):
         self.reward_archive: list[float] = []
         self.current_best_bb = None
         self.name = name
+        self._state_type = state_type
 
         self.action_space = spaces.Discrete(9)
-        self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
+        if (self._state_type == STATE_IMAGE_ONLY):
+            self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
+        elif (self._state_type == STATE_IMAGE_AND_VIEW):
+            self.observation_space = spaces.Dict({
+                "image": spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8),
+                "view": spaces.Box(low=0.0, high=1.0, shape=(4,), dtype=np.float32)
+            })
+        else:
+            raise Exception("Unknown State type")
 
     def reset(self, seed = None, options = None):
         super().reset(seed=seed)
@@ -145,7 +157,7 @@ class SquareEnv(gymnasium.Env):
             cv2.rectangle(img, (round(x1*img_w), round(y1*img_h)), (round(x2*img_w)-1, round(y2*img_h)-1), (255,), 1)
         return img
     
-    def get_observation(self) -> MatLike:
+    def get_observation(self) -> MatLike|dict:
         img_h, img_w, _ = self.base_img.shape
 
         # Calculate area so that it is always at least 1x1 pixels in a valid spot
@@ -171,7 +183,12 @@ class SquareEnv(gymnasium.Env):
         view_scaled = self._scaling(view_cutout, self.width, self.height)
 
         # Convert to channel-first format. See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
-        return np.expand_dims(view_scaled, axis=0)
+        img = np.expand_dims(view_scaled, axis=0)
+
+        if self._state_type == STATE_IMAGE_ONLY:
+            return img
+        
+        return {"image":img, "view": np.array(self.view, dtype=np.float32)}
     
     def _scaling(self, img: MatLike, width, height):
         """Special rescaling method that ensures no lines are lost"""
@@ -205,10 +222,10 @@ class SquareEnv(gymnasium.Env):
             # This can happen in same very rare edge cases when two lines are on top of one another
             leaves = overlaping
 
-        leaves.sort(key=lambda x: x.iou(rect), reverse=True)
+        leaves.sort(key=lambda x: x.tolerant_iou(rect), reverse=True)
 
         best_bb = leaves[0]
-        max_iou = best_bb.iou(rect)
+        max_iou = best_bb.tolerant_iou(rect)
         best_is_root = best_bb is self.ground_truth_labels[0]
         self.current_best_bb = best_bb
 
@@ -269,7 +286,11 @@ class SquareEnv(gymnasium.Env):
     def render(self):
         if self.render_mode == 'none' or self.render_mode is None:
             return
-        obs = self.get_observation()[0]
+        obs = self.get_observation()
+        if (self._state_type == STATE_IMAGE_ONLY):
+            obs = obs[0]
+        else:
+            obs = obs["image"][0]
         img = cv2.cvtColor(self.preprocessed, cv2.COLOR_GRAY2BGR)
         img_h, img_w, _ = img.shape
         view_rect = BoundingBox(self.view, BoundingBoxType.TWO_CORNERS).get_rect(img_w, img_h)
