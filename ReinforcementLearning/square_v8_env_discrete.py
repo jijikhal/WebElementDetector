@@ -111,12 +111,12 @@ class SquareEnv(gymnasium.Env):
         # Curriculum learning
         if (len(self.reward_archive) >= 100):
             avg = sum(self.reward_archive)/len(self.reward_archive)
-            if (avg > 0.7):
+            if (avg > 0.8):
                 self.max_bbs += 1
                 print(f"Increased difficulty of env {self.name} to {self.max_bbs}")
                 try:
                     with open("difficulty_log.txt", "a") as f:
-                        f.write(f"Increased difficulty of env {self.name} to {self.max_bbs} at {datetime.datetime.now().strftime('%Y%m%d-%H%M%')}\n")
+                        f.write(f"Increased difficulty of env {self.name} to {self.max_bbs} at {datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}\n")
                 except:
                     pass
 
@@ -291,7 +291,7 @@ class SquareEnv(gymnasium.Env):
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v8-discrete', render_mode='human', height = 84, width = 84, start_rects = 100)
+    #env = gymnasium.make('square-v8-discrete', render_mode='none', height = 84, width = 84, start_rects = 1000)
 
     print("check begin")
     #check_env(env)
@@ -304,6 +304,16 @@ if __name__ == "__main__":
         total += env.env.env.steps
 
     print(total/10000)"""
+
+    image_paths = [join("dataset_big", f) for f in listdir("dataset_big") if isfile(join("dataset_big", f))][1000:2000]
+    total = 0
+    for i in image_paths:
+        base_img = cv2.imread(i)
+        total += len(find_bounding_boxes(base_img))
+
+    print(total/len(image_paths))
+    exit(0)
+
 
     obs = env.reset(seed=1)[0]
 

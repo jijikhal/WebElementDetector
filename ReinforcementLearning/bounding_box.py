@@ -147,6 +147,34 @@ class BoundingBox:
         
         return overlap/union
     
+    @staticmethod
+    def _shift_closer_by_tolerance(x: float, y: float, tolerance: float) -> tuple[float, float]:
+        if abs(x-y) < tolerance:
+            result = (x+y)/2
+            return result, result
+        elif x < y:
+            return x+tolerance/2, y-tolerance/2
+        else:
+            return x-tolerance/2, y+tolerance/2
+
+    def tolerant_iou(self, other: 'BoundingBox', tolerance: float = 0.01) -> float:
+        iou_before = self.iou(other)
+
+        x1, y1, x2, y2 = self.get_bb_corners()
+        x3, y3, x4, y4 = other.get_bb_corners()
+
+        x1, x3 = BoundingBox._shift_closer_by_tolerance(x1, x3, tolerance)
+        x2, x4 = BoundingBox._shift_closer_by_tolerance(x2, x4, tolerance)
+        y1, y3 = BoundingBox._shift_closer_by_tolerance(y1, y3, tolerance)
+        y2, y4 = BoundingBox._shift_closer_by_tolerance(y2, y4, tolerance)
+
+        new_bb_1 = BoundingBox((x1, y1, x2, y2), BoundingBoxType.TWO_CORNERS)
+        new_bb_2 = BoundingBox((x3, y3, x4, y4), BoundingBoxType.TWO_CORNERS)
+
+        iou_after = new_bb_1.iou(new_bb_2)
+        return iou_before*0.25 + iou_after*0.75
+
+
     def get_distance(self, other: 'BoundingBox') -> float:
         x1, y1, x2, y2 = self.get_bb_corners()
         x3, y3, x4, y4 = other.get_bb_corners()
