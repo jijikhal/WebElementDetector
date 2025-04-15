@@ -82,7 +82,7 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
 
 class SquareEnv(gymnasium.Env):
     metadata = {'render_modes': ['human','none', 'rgb_array_list', 'rgb_array']} 
-    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = "dataset_big", start_rects: int = 3, name: str = "env", state_type = STATE_IMAGE_ONLY) -> None:
+    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = "dataset_big", start_rects: int = 3, name: str = "env", state_type = STATE_IMAGE_ONLY, padding: float = 0.05) -> None:
         super().__init__()
         self.height: int = height
         self.width: int = width
@@ -94,6 +94,8 @@ class SquareEnv(gymnasium.Env):
         self.ground_truth_labels: list[BoundingBox] = find_bounding_boxes(self.base_img)[:self.max_bbs]
         self.view: list[float] = [0.0, 0.0, 1.0, 1.0]
         self.last_reward = 0
+        self.padding = padding
+        self._padding_pixels: tuple[int, int] = (0,0)
         self.preprocessed: MatLike = self._preprocess_img()
         self.reward_archive: list[float] = []
         self.current_best_bb = None
@@ -155,7 +157,13 @@ class SquareEnv(gymnasium.Env):
         for l in self.ground_truth_labels:
             x1, y1, x2, y2 = l.get_bb_corners()
             cv2.rectangle(img, (round(x1*img_w), round(y1*img_h)), (round(x2*img_w)-1, round(y2*img_h)-1), (255,), 1)
-        return img
+
+        padding_x = round(img_w*self.padding)
+        padding_y = round(img_h*self.padding)
+        self._padding_pixels = (padding_x, padding_y)
+
+        padded = np.pad(img, ((padding_y, padding_y),(padding_x, padding_x)), 'constant', constant_values=0)
+        return padded
     
     def get_observation(self) -> MatLike|dict:
         img_h, img_w, _ = self.base_img.shape
@@ -179,7 +187,12 @@ class SquareEnv(gymnasium.Env):
                 y2 += 2
             else:
                 y2 +=2
-        view_cutout = self.preprocessed[y1:y2, x1:x2]
+
+        scaled_pad_x = round((x2-x1)*self.padding)
+        scaled_pad_y = round((y2-y1)*self.padding)
+        pad_x, pad_y = self._padding_pixels
+        
+        view_cutout = self.preprocessed[pad_y+y1-scaled_pad_y:pad_y+y2+scaled_pad_y, pad_x+x1-scaled_pad_x:pad_x+x2+scaled_pad_x]
         view_scaled = self._scaling(view_cutout, self.width, self.height)
 
         # Convert to channel-first format. See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
@@ -292,11 +305,18 @@ class SquareEnv(gymnasium.Env):
         else:
             obs = obs["image"][0]
         img = cv2.cvtColor(self.preprocessed, cv2.COLOR_GRAY2BGR)
-        img_h, img_w, _ = img.shape
+        img_h, img_w, _ = self.base_img.shape
         view_rect = BoundingBox(self.view, BoundingBoxType.TWO_CORNERS).get_rect(img_w, img_h)
         best_bb_rect = self.current_best_bb.get_rect(img_w, img_h)
-        cv2.rectangle(img, view_rect, (0, 0, 255), 1)
-        cv2.rectangle(img, best_bb_rect, (255, 0, 0), 1)
+
+        pad_x, pad_y = self._padding_pixels
+
+        scaled_pad_x = round(view_rect[2]*self.padding)
+        scaled_pad_y = round(view_rect[3]*self.padding)
+
+        cv2.rectangle(img, (view_rect[0]+pad_x, view_rect[1]+pad_y, view_rect[2], view_rect[3]), (0, 0, 255), 1)
+        cv2.rectangle(img, (view_rect[0]+pad_x-scaled_pad_x, view_rect[1]+pad_y-scaled_pad_y, view_rect[2]+2*scaled_pad_x, view_rect[3]+2*scaled_pad_y), (0, 255, 0), 1)
+        cv2.rectangle(img, (best_bb_rect[0]+pad_x, best_bb_rect[1]+pad_y, best_bb_rect[2], best_bb_rect[3]), (255, 0, 0), 1)
         scaled_obs = cv2.resize(obs, (500, 500), interpolation=cv2.INTER_NEAREST)
         if self.render_mode == 'human':
             cv2.imshow("Observation", scaled_obs)

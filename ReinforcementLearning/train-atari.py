@@ -70,6 +70,7 @@ def train():
                 vf_coef=0.5,
                 )
     print(sum(p.numel() for p in model.policy.parameters()))
+    print(model.policy)
 
     eval_env = DummyVecEnv([make_env(name="Eval env", start_rects=1000, state_type=STATE_IMAGE_AND_VIEW)])
     eval_env = VecMonitor(eval_env)

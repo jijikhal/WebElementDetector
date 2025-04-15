@@ -29,7 +29,7 @@ ACTION_MAPPING = {
 }
 
 def main():
-    env = gym.make(ENV, width=84, height=84, render_mode='rgb_array_list', start_rects = 1000, state_type=STATE_IMAGE_AND_VIEW)
+    env = gym.make(ENV, width=84, height=84, render_mode='rgb_array_list', start_rects = 1000, state_type=STATE_IMAGE_AND_VIEW, padding=0.05)
     while True:  # Episode loop
         print("New episode started")
         obs, info = env.reset()

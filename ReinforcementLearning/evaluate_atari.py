@@ -9,26 +9,27 @@ from gymnasium.wrappers import TimeLimit
 import cv2
 from time import time
 import square_v8_env_discrete
+from square_v8_env_discrete import STATE_IMAGE_AND_VIEW, STATE_IMAGE_ONLY
 import numpy as np
 
 ENV = 'square-v8-discrete'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v8_curriculum_avg100more07_morefixes\best_model\best_model.zip"
-NORM = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v8_curriculum_avg100more07_morefixes\vec_normalize.pkl"
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250412-165005\best_model\best_model.zip"
+NORM = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250410-130939\vec_normalize.pkl"
 
 # Recreate the environment
 def make_env():
-    env = gym.make(ENV, width=84, height=84, render_mode='none', start_rects=50)  # Use the same ENV as training
+    env = gym.make(ENV, width=84, height=84, render_mode='none', start_rects=50, state_type=STATE_IMAGE_AND_VIEW)  # Use the same ENV as training
     env = TimeLimit(env, max_episode_steps=1000)
     return env
 
 # Create VecEnv
 vec_env = DummyVecEnv([make_env])
 vec_env = VecMonitor(vec_env)  # Wrap it again
-vec_env = VecNormalize.load(NORM, vec_env)  # Load normalization
+#vec_env = VecNormalize.load(NORM, vec_env)  # Load normalization
 
 # Set evaluation mode to avoid updating normalization stats
-vec_env.training = False
-vec_env.norm_reward = False
+#vec_env.training = False
+#vec_env.norm_reward = False
 
 # Load the trained model
 model = PPO.load(MODEL, env=vec_env, device='cuda')

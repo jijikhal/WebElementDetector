@@ -157,7 +157,10 @@ class BoundingBox:
         else:
             return x-tolerance/2, y+tolerance/2
 
-    def tolerant_iou(self, other: 'BoundingBox', tolerance: float = 0.01) -> float:
+    def tolerant_iou(self, other: 'BoundingBox', tolerance: float = 0.01, weight_of_modified: float = 0.75) -> float:
+        assert 0 <= tolerance <= 1, "Tolerance must be 0-1"
+        assert 0 <= weight_of_modified <= 1, "Tolerance must be 0-1"
+
         iou_before = self.iou(other)
 
         x1, y1, x2, y2 = self.get_bb_corners()
@@ -172,7 +175,7 @@ class BoundingBox:
         new_bb_2 = BoundingBox((x3, y3, x4, y4), BoundingBoxType.TWO_CORNERS)
 
         iou_after = new_bb_1.iou(new_bb_2)
-        return iou_before*0.25 + iou_after*0.75
+        return iou_before*(1-weight_of_modified) + iou_after*weight_of_modified
 
 
     def get_distance(self, other: 'BoundingBox') -> float:
