@@ -243,10 +243,14 @@ class SquareEnv(gymnasium.Env):
         self.current_best_bb = best_bb
 
         if stop:
+            children = [x for x in self.ground_truth_labels if best_bb.fully_contains(x)]
+            for child in children:
+                self.ground_truth_labels.remove(child)
             self.ground_truth_labels.remove(best_bb)
             x1, y1, x2, y2 = best_bb.get_bb_corners()
             img_h, img_w, _ = self.base_img.shape
-            self.preprocessed[round(y1*img_h):round(y2*img_h), round(x1*img_w):round(x2*img_w)] = 0
+            pad_x, pad_y = self._padding_pixels
+            self.preprocessed[round(pad_y+y1*img_h):round(pad_y+y2*img_h), round(pad_x+x1*img_w):round(pad_x+x2*img_w)] = 0
             self.reward_archive.append(max_iou)
             return max_iou*3, best_is_root
             
