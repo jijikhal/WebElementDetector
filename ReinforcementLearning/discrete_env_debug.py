@@ -1,9 +1,9 @@
 import gymnasium as gym
-import square_v8_env_discrete
-from square_v8_env_discrete import SHRINK_LEFT, SHRINK_LEFT_SMALL, SHRINK_BOTTOM, SHRINK_BOTTOM_SMALL, SHRINK_RIGHT, SHRINK_RIGHT_SMALL, SHRINK_TOP, SHRINK_TOP_SMALL, STOP, STATE_IMAGE_AND_VIEW, STATE_IMAGE_ONLY
+import square_v9_env_discrete
+from square_v9_env_discrete import SHRINK_LEFT, SHRINK_LEFT_SMALL, SHRINK_BOTTOM, SHRINK_BOTTOM_SMALL, SHRINK_RIGHT, SHRINK_RIGHT_SMALL, SHRINK_TOP, SHRINK_TOP_SMALL, STOP, STATE_IMAGE_AND_VIEW, STATE_IMAGE_ONLY
 import cv2
 
-ENV = 'square-v8-discrete'
+ENV = 'square-v9-discrete'
 
 ARROW_LEFT = 2424832
 ARROW_UP = 2490368
@@ -29,7 +29,7 @@ ACTION_MAPPING = {
 }
 
 def main():
-    env = gym.make(ENV, width=84, height=84, render_mode='rgb_array_list', start_rects = 1000, state_type=STATE_IMAGE_AND_VIEW, padding=0.05)
+    env = gym.make(ENV, width=84, height=84, render_mode='rgb_array_list', start_rects = 1000, state_type=STATE_IMAGE_AND_VIEW, padding=0.00)
     while True:  # Episode loop
         print("New episode started")
         obs, info = env.reset()

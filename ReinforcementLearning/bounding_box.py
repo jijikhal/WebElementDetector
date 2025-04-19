@@ -17,7 +17,7 @@ class BoundingBox:
 
     All are in relative coordinates (0-1)
     """
-    def __init__(self, bb: RectF, type: BoundingBoxType = BoundingBoxType.CENTER) -> None:
+    def __init__(self, bb: RectF | list[float], type: BoundingBoxType = BoundingBoxType.CENTER) -> None:
         self.x: float
         self.y: float
         self.w: float
