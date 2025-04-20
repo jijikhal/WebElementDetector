@@ -1,5 +1,5 @@
 from enum import Enum
-from math import sqrt
+from math import exp, sqrt
 
 RectF = tuple[float, float, float, float]
 RectI = tuple[int, int, int, int]
@@ -176,6 +176,26 @@ class BoundingBox:
 
         iou_after = new_bb_1.iou(new_bb_2)
         return iou_before*(1-weight_of_modified) + iou_after*weight_of_modified
+    
+    @staticmethod
+    def _sigmoid(x: float) -> float:
+        return 1 / (1 + exp(-x))
+    
+    def ASS(self, other: 'BoundingBox', sharpness = 2.8, shift = 0.5) -> float:
+        """
+        Computes the Absolute Sigmoid Score
+        """
+        x1, y1, x2, y2 = self.get_bb_corners()
+        x3, y3, x4, y4 = other.get_bb_corners()
+
+        cx1, cy1 = (x1+x2)/2, (y1+y2)/2
+        cx2, cy2 = (x3+x4)/2, (y3+y4)/2
+        diff = abs(x1-x3) + abs(x2-x4) + abs(y1-y3) + abs(y2-y4) + abs(cx1-cx2) + abs(cy1-cy2)
+
+        norm_factor = 1 - BoundingBox._sigmoid(-sharpness * shift)
+        score = 1 - BoundingBox._sigmoid(sharpness * (diff - shift))
+
+        return score / norm_factor
 
 
     def get_distance(self, other: 'BoundingBox') -> float:
