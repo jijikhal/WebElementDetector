@@ -1,5 +1,6 @@
 from enum import Enum
 from math import exp, sqrt
+from cv2.typing import Rect
 
 RectF = tuple[float, float, float, float]
 RectI = tuple[int, int, int, int]
@@ -8,6 +9,7 @@ class BoundingBoxType(Enum):
     CENTER = 1
     TOP_LEFT = 2
     TWO_CORNERS = 3
+    OPEN_CV = 4
 
 class BoundingBox:
     """
@@ -17,11 +19,15 @@ class BoundingBox:
 
     All are in relative coordinates (0-1)
     """
-    def __init__(self, bb: RectF | list[float], type: BoundingBoxType = BoundingBoxType.CENTER) -> None:
+    def __init__(self, bb: RectF | list[float] | Rect, type: BoundingBoxType = BoundingBoxType.CENTER, img_w: int = -1, img_h: int = -1) -> None:
         self.x: float
         self.y: float
         self.w: float
         self.h: float
+
+        self.img_w: int = img_w
+        self.img_h: int = img_h
+        self.is_absolute: bool = False
 
         if type == BoundingBoxType.CENTER:
             x, y, w, h = bb
@@ -49,6 +55,34 @@ class BoundingBox:
             self.y = min(y1, y2)
             self.w = abs(x1-x2)
             self.h = abs(y1-y2)
+        elif type == BoundingBoxType.OPEN_CV:
+            assert img_h > 0 and img_w > 0, "For OpenCv type the image size must be specified"
+            self.is_absolute = True
+            x_abs, y_abs, w_abs, h_abs = bb
+            x = x_abs/img_w
+            y = y_abs/img_h
+            w = w_abs/img_w
+            h = h_abs/img_h
+            if (x+w > 1):
+                w = 1-x
+            if (y+h > 1):
+                h = 1-y
+            self.x = x
+            self.y = y
+            self.w = w
+            self.h = h
+
+    def abs_width(self) -> int:
+        assert self.is_absolute, "absolute width is only available for absolut defined bounding boxes"
+        return round(self.w*self.img_w)
+
+    def abs_height(self) -> int:
+        assert self.is_absolute, "absolute height is only available for absolut defined bounding boxes"
+        return round(self.h*self.img_h)
+    
+    def abs_area(self) -> int:
+        return self.abs_height()*self.abs_width()
+
 
     def __repr__(self) -> str:
         return f"<BoundingBox: ({self.x}, {self.y}, {self.w}, {self.h})>"
@@ -70,11 +104,15 @@ class BoundingBox:
     def get_bb_corners(self) -> RectF:
         return (self.x, self.y, self.x+self.w, self.y+self.h)
     
-    def get_rect(self, img_width: int, img_height: int) -> RectI:
+    def get_rect(self, img_width: int = -1, img_height: int = -1) -> RectI:
         """
         Returns a bounding box in absolute coordinates int the TL format.
         """
-        return (int(self.x*img_width), int(self.y*img_height), int(self.w*img_width), int(self.h*img_height))
+        assert self.is_absolute or (img_height > 0 and img_width > 0), "For non-OpenCV bounding boxes, img size must be specified"
+        if (self.is_absolute and (img_height < 0 or img_width < 0)):
+            img_height = self.img_h
+            img_width = self.img_w
+        return (round(self.x*img_width), round(self.y*img_height), round(self.w*img_width), round(self.h*img_height))
 
     def fully_contains(self, other: 'BoundingBox') -> bool:
         """
@@ -124,6 +162,9 @@ class BoundingBox:
         x, y = max(x1, x2), max(y1, y2)
         xd, yd = min(x1+w1, x2+w2), min(y1+h1, y2+h2)
         return max(0, xd-x)*max(0, yd-y)
+    
+    def percentage_inside(self, other: 'BoundingBox') -> float:
+        return self.overlap(other) / other.area()
     
     def has_overlap(self, other: 'BoundingBox') -> bool:
         """
@@ -181,7 +222,7 @@ class BoundingBox:
     def _sigmoid(x: float) -> float:
         return 1 / (1 + exp(-x))
     
-    def ASS(self, other: 'BoundingBox', sharpness = 2.8, shift = 0.5) -> float:
+    def ASS(self, other: 'BoundingBox', sharpness: float = 2.8, shift: float = 0.5) -> float:
         """
         Computes the Absolute Sigmoid Score
         """
@@ -192,8 +233,8 @@ class BoundingBox:
         cx2, cy2 = (x3+x4)/2, (y3+y4)/2
         diff = abs(x1-x3) + abs(x2-x4) + abs(y1-y3) + abs(y2-y4) + abs(cx1-cx2) + abs(cy1-cy2)
 
-        norm_factor = 1 - BoundingBox._sigmoid(-sharpness * shift)
         score = 1 - BoundingBox._sigmoid(sharpness * (diff - shift))
+        norm_factor = 1 - BoundingBox._sigmoid(-sharpness * shift)
 
         return score / norm_factor
 
@@ -226,5 +267,11 @@ class BoundingBox:
         x1, y1, x2, y2 = self.get_bb_corners()
         x3, y3, x4, y4 = other.get_bb_corners()
 
-        return BoundingBox((min(x1, x3), min(y1, y3), max(x2, x4), max(y2, y4)), BoundingBoxType.TWO_CORNERS)
+        result = BoundingBox((min(x1, x3), min(y1, y3), max(x2, x4), max(y2, y4)), BoundingBoxType.TWO_CORNERS)
+        if (self.is_absolute and other.is_absolute and self.img_w == other.img_w and self.img_h == other.img_h):
+            result.is_absolute = True
+            result.img_h = self.img_h
+            result.img_w = self.img_w
+
+        return result
 

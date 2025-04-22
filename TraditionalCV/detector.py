@@ -140,6 +140,7 @@ def find_elements_cv(img: MatLike):
     root = make_bb_tree(contours, img_w, img_h)
     print("tree creation took:", time()-start)
 
+    start = time()
     # Flter out too small elements
     root.filter_nodes(lambda x: max(x.bb.abs_width(), x.bb.abs_height()) < 30 or min(
         x.bb.abs_width(), x.bb.abs_height()) < 10, canny)
@@ -165,6 +166,8 @@ def find_elements_cv(img: MatLike):
             used.add(t)
             m = b.merge(t)
         merged.append(m)
+
+    print("filtering took:", time()-start)
 
     for b in merged:
         cv2.rectangle(copy_for_show, b.get_rect(), (255, 255, 0), 2)
