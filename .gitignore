@@ -6,6 +6,7 @@ ReinforcementLearning/logs/*
 ReinforcementLearning/graphs/*
 ReinforcementLearning/models/*
 ReinforcementLearning/*.db
+yolo/dataset/*
 *.jpg
 
 

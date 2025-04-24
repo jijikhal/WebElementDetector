@@ -134,6 +134,9 @@ class BoundingBox:
         _, _, w, h = self.get_bb_tl()
         return w*h
     
+    def aspect_ratio(self) -> float:
+        return self.w/self.h
+    
     def is_intersecting(self, other: 'BoundingBox') -> bool:
         """
         Returns whether the bounding rectangles of the two bounding boxes have any common points.
