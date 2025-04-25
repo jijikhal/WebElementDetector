@@ -1,13 +1,14 @@
-Dataset/
-runs/
 *.pt
-ReinforcementLearning/images/*
-ReinforcementLearning/logs/*
-ReinforcementLearning/graphs/*
-ReinforcementLearning/models/*
-ReinforcementLearning/*.db
-yolo/dataset/*
+wed/rl/images/*
+wed/rl/logs/*
+wed/rl/graphs/graph_maker.py
+wed/rl/models/*
+wed/rl/*.db
+wed/rl/difficulty_log.txt
+wed/yolo/dataset/*
+wed/yolo/runs/*
 *.jpg
+.vscode
 
 
 # Byte-compiled / optimized / DLL files
