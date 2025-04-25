@@ -6,8 +6,8 @@ import os
 import square_v2_env_discrete
 import square_v5_env_discrete
 import square_v7_env_discrete
-import square_v9_env_discrete
-from square_v9_env_discrete import STATE_IMAGE_AND_VIEW, STATE_IMAGE_ONLY
+import square_v8_env_discrete
+from square_v8_env_discrete import STATE_IMAGE_AND_VIEW, STATE_IMAGE_ONLY
 import datetime
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3 import PPO
@@ -18,7 +18,7 @@ from gymnasium.wrappers import TimeLimit
 import math
 from combined_feature_extractor import CustomCombinedExtractor
 
-ENV = 'square-v9-discrete'
+ENV = 'square-v8-discrete'
 
 def exp_schedule(initial_value: float):
     def func(progress_remaining: float) -> float:

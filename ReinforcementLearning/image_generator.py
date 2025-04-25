@@ -90,15 +90,15 @@ def generete_hierarchy(size: tuple[int, int], seed_set = None) -> tuple[MatLike,
     return img, hierarchy
 
 if __name__ == "__main__":
-    """total = 0
+    total = 0
     for _ in range(10000):
         img, h = generete_hierarchy((100, 100), None)
         total += len(h)
-    print(total/10000)"""
+    print(total/10000)
 
-    while True:
+    """while True:
         img, _ = generete_hierarchy((100, 100), None)
         cv2.imshow("hierarchy", img)
         if cv2.waitKey(0) & 0xFF == 27:
             break
-    cv2.destroyAllWindows()
+    cv2.destroyAllWindows()"""

@@ -13,13 +13,13 @@ from square_v8_env_discrete import STATE_IMAGE_AND_VIEW, STATE_IMAGE_ONLY
 import numpy as np
 
 ENV = 'square-v8-discrete'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250412-165005\best_model\best_model.zip"
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\v8d_tolerant_08_dict\best_model\best_model.zip"
 NORM = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250410-130939\vec_normalize.pkl"
 
 # Recreate the environment
 def make_env():
-    env = gym.make(ENV, width=84, height=84, render_mode='none', start_rects=50, state_type=STATE_IMAGE_AND_VIEW)  # Use the same ENV as training
-    env = TimeLimit(env, max_episode_steps=1000)
+    env = gym.make(ENV, width=84, height=84, render_mode='none', start_rects=100, state_type=STATE_IMAGE_AND_VIEW)  # Use the same ENV as training
+    env = TimeLimit(env, max_episode_steps=10000)
     return env
 
 # Create VecEnv

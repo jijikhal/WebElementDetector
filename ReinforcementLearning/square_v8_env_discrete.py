@@ -82,7 +82,7 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
 
 class SquareEnv(gymnasium.Env):
     metadata = {'render_modes': ['human','none', 'rgb_array_list', 'rgb_array']} 
-    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = "dataset_big", start_rects: int = 3, name: str = "env", state_type = STATE_IMAGE_ONLY, padding: float = 0.05) -> None:
+    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = "dataset_big", start_rects: int = 3, name: str = "env", state_type = STATE_IMAGE_ONLY, padding: float = 0.00) -> None:
         super().__init__()
         self.height: int = height
         self.width: int = width
@@ -125,7 +125,7 @@ class SquareEnv(gymnasium.Env):
         # Curriculum learning
         if (len(self.reward_archive) >= 100):
             avg = sum(self.reward_archive)/len(self.reward_archive)
-            if (avg > 0.8):
+            if (avg > 0.9):
                 self.max_bbs += 1
                 print(f"Increased difficulty of env {self.name} to {self.max_bbs}")
                 try:
@@ -235,10 +235,10 @@ class SquareEnv(gymnasium.Env):
             # This can happen in same very rare edge cases when two lines are on top of one another
             leaves = overlaping
 
-        leaves.sort(key=lambda x: x.tolerant_iou(rect), reverse=True)
+        leaves.sort(key=lambda x: x.ASS(rect), reverse=True)
 
         best_bb = leaves[0]
-        max_iou = best_bb.tolerant_iou(rect)
+        max_iou = best_bb.ASS(rect)
         best_is_root = best_bb is self.ground_truth_labels[0]
         self.current_best_bb = best_bb
 
