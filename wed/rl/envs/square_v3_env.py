@@ -103,7 +103,7 @@ class SquareEnv(gymnasium.Env):
 
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v3', render_mode='human')
+    env = gymnasium.make('square-v3', render_mode='none')
     env = RescaleAction(env, -1, 1)
 
     print("check begin")
@@ -112,10 +112,30 @@ if __name__ == "__main__":
 
     obs = env.reset()[0]
 
-    for i in range(10):
-        rand_action = env.action_space.sample()
-        print(rand_action)
-        obs, reward, terminated, _, _ = env.step(rand_action)
-        print(reward, terminated)
-        if (terminated):
-            break
+    total = 0
+    total_s = 0
+    steps = 0
+    episodes = 0
+    objects = 0
+
+    while (steps < 100_000):
+        obs = env.reset()[0]
+        ep_rew = 0
+        ep_len = 0
+        terminated = False
+        stopped = False
+        objects += len(env.unwrapped.bb)
+        while not terminated and not stopped:
+            rand_action = env.action_space.sample()
+            obs, reward, terminated, stopped, _ = env.step(rand_action)
+            steps += 1
+            ep_len += 1
+            ep_rew += reward
+        total += ep_rew
+        total_s += ep_len
+        episodes += 1
+
+    print(episodes)
+    print(total/episodes)
+    print(total_s/episodes)
+    print(objects/episodes)

@@ -1,9 +1,9 @@
 import gymnasium as gym
-import square_v8_env_discrete
-from square_v8_env_discrete import SHRINK_LEFT, SHRINK_LEFT_SMALL, SHRINK_BOTTOM, SHRINK_BOTTOM_SMALL, SHRINK_RIGHT, SHRINK_RIGHT_SMALL, SHRINK_TOP, SHRINK_TOP_SMALL, STOP, STATE_IMAGE_AND_VIEW, STATE_IMAGE_ONLY
+import envs.square_v9_env_discrete
+from envs.square_v9_env_discrete import Action, ObservationType
 import cv2
 
-ENV = 'square-v8-discrete'
+ENV = 'square-v9-discrete'
 
 ARROW_LEFT = 2424832
 ARROW_UP = 2490368
@@ -17,19 +17,19 @@ SPACE = 32
 ESC = 27
 
 ACTION_MAPPING = {
-    ARROW_LEFT: SHRINK_LEFT,
-    KEY_A: SHRINK_LEFT_SMALL,
-    ARROW_UP: SHRINK_TOP,
-    KEY_W: SHRINK_TOP_SMALL,
-    ARROW_RIGHT: SHRINK_RIGHT,
-    KEY_D: SHRINK_RIGHT_SMALL,
-    ARROW_DOWN: SHRINK_BOTTOM,
-    KEY_S: SHRINK_BOTTOM_SMALL,
-    SPACE: STOP
+    ARROW_LEFT: Action.SHRINK_LEFT,
+    KEY_A: Action.SHRINK_LEFT_SMALL,
+    ARROW_UP: Action.SHRINK_TOP,
+    KEY_W: Action.SHRINK_TOP_SMALL,
+    ARROW_RIGHT: Action.SHRINK_RIGHT,
+    KEY_D: Action.SHRINK_RIGHT_SMALL,
+    ARROW_DOWN: Action.SHRINK_BOTTOM,
+    KEY_S: Action.SHRINK_BOTTOM_SMALL,
+    SPACE: Action.STOP
 }
 
 def main():
-    env = gym.make(ENV, width=84, height=84, render_mode='rgb_array_list', start_rects = 1000, state_type=STATE_IMAGE_AND_VIEW, padding=0.00)
+    env = gym.make(ENV, width=150, height=150, render_mode='rgb_array_list', start_rects = 1000, state_type=ObservationType.STATE_IMAGE_AND_VIEW, padding=0.00)
     while True:  # Episode loop
         print("New episode started")
         obs, info = env.reset()

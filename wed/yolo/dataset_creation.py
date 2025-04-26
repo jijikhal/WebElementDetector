@@ -20,7 +20,7 @@ def create_labels(images: str, labels: str) -> None:
 
         img = cv2.imread(img_path)
         try:
-            boxes = find_elements_cv(img, include_root=False)
+            boxes, _ = find_elements_cv(img, include_root=False)
         except Exception as e:
             print(f"Failed to annotate image {i}: {e}")
             continue

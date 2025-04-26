@@ -7,7 +7,7 @@ import cv2
 from cv2.typing import MatLike
 import math
 from stable_baselines3.common.env_checker import check_env
-from gymnasium.wrappers.rescale_action import RescaleAction
+from gymnasium.wrappers import RescaleAction
 
 register(
     id='square-v0',
@@ -15,7 +15,7 @@ register(
 )
 
 class SquareEnv(gymnasium.Env):
-    metadata = {'render_modes': ['human'], 'render_fps':1} 
+    metadata = {'render_modes': ['human','none', 'rgb_array'], 'render_fps':1} 
     def __init__(self, height: int = 100, width: int = 100, render_mode=None) -> None:
         super().__init__()
         self.height: int = height
@@ -79,12 +79,21 @@ class SquareEnv(gymnasium.Env):
         return obs, reward, terminated, stoped, info
     
     def render(self):
-        cv2.imshow("square-v0 render", self.img[0])
-        cv2.waitKey(0)
+        if self.render_mode == 'none' or self.render_mode is None:
+            return
+        if self.render_mode == 'human':
+            cv2.imshow("square-v0 render", self.img[0])
+            cv2.waitKey(1)
+        if self.render == 'rgb_array':
+            return self.img[0]
+        
+    def close(self):
+        if self.render_mode == 'human':
+            cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v0', render_mode='human')
+    env = gymnasium.make('square-v0', render_mode='none')
     env = RescaleAction(env, -1, 1)
 
     print("check begin")
@@ -93,7 +102,7 @@ if __name__ == "__main__":
 
     obs = env.reset()[0]
 
-    for i in range(10):
+    for i in range(100_000):
         rand_action = env.action_space.sample()
         print(rand_action)
         obs, reward, terminated, _, _ = env.step(rand_action)

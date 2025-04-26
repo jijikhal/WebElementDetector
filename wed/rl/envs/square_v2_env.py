@@ -1,14 +1,14 @@
 import gymnasium
 from gymnasium import spaces
 from gymnasium.envs.registration import register
-from wed.bounding_box import BoundingBox, RectF, RectI, BoundingBoxType
+from bounding_box import BoundingBox, RectF, RectI, BoundingBoxType
 import numpy as np
 import cv2
 from cv2.typing import MatLike
 import math
 from random import uniform
 from stable_baselines3.common.env_checker import check_env
-from gymnasium.wrappers.rescale_action import RescaleAction
+from gymnasium.wrappers import RescaleAction
 
 register(
     id='square-v2',

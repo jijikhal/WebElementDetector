@@ -12,24 +12,27 @@ from os import listdir
 from os.path import isfile, join
 from time import time
 import datetime
+from enum import IntEnum
 
 register(
     id='square-v8-discrete',
     entry_point='rl.envs.square_v8_env_discrete:SquareEnv'
 )
 
-SHRINK_LEFT = 0
-SHRINK_RIGHT = 1
-SHRINK_TOP = 2
-SHRINK_BOTTOM = 3
-SHRINK_LEFT_SMALL = 4
-SHRINK_RIGHT_SMALL = 5
-SHRINK_TOP_SMALL = 6
-SHRINK_BOTTOM_SMALL = 7
-STOP = 8
+class Action(IntEnum):
+    SHRINK_LEFT = 0
+    SHRINK_RIGHT = 1
+    SHRINK_TOP = 2
+    SHRINK_BOTTOM = 3
+    SHRINK_LEFT_SMALL = 4
+    SHRINK_RIGHT_SMALL = 5
+    SHRINK_TOP_SMALL = 6
+    SHRINK_BOTTOM_SMALL = 7
+    STOP = 8
 
-STATE_IMAGE_ONLY = 0
-STATE_IMAGE_AND_VIEW = 1
+class ObservationType(IntEnum):
+    STATE_IMAGE_ONLY = 0
+    STATE_IMAGE_AND_VIEW = 1
 
 def draw_rect(bb: RectI, image: MatLike) -> None:
     x, y, w, h = bb
@@ -102,9 +105,9 @@ class SquareEnv(gymnasium.Env):
         self._state_type = state_type
 
         self.action_space = spaces.Discrete(9)
-        if (self._state_type == STATE_IMAGE_ONLY):
+        if (self._state_type == ObservationType.STATE_IMAGE_ONLY):
             self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
-        elif (self._state_type == STATE_IMAGE_AND_VIEW):
+        elif (self._state_type == ObservationType.STATE_IMAGE_AND_VIEW):
             self.observation_space = spaces.Dict({
                 "image": spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8),
                 "view": spaces.Box(low=0.0, high=1.0, shape=(4,), dtype=np.float32)
@@ -197,7 +200,7 @@ class SquareEnv(gymnasium.Env):
         # Convert to channel-first format. See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
         img = np.expand_dims(view_scaled, axis=0)
 
-        if self._state_type == STATE_IMAGE_ONLY:
+        if self._state_type == ObservationType.STATE_IMAGE_ONLY:
             return img
         
         return {"image":img, "view": np.array(self.view, dtype=np.float32)}
@@ -234,10 +237,10 @@ class SquareEnv(gymnasium.Env):
             # This can happen in same very rare edge cases when two lines are on top of one another
             leaves = overlaping
 
-        leaves.sort(key=lambda x: x.ASS(rect), reverse=True)
+        leaves.sort(key=lambda x: x.tolerant_iou(rect), reverse=True)
 
         best_bb = leaves[0]
-        max_iou = best_bb.ASS(rect)
+        max_iou = best_bb.tolerant_iou(rect)
         best_is_root = best_bb is self.ground_truth_labels[0]
         self.current_best_bb = best_bb
 
@@ -260,21 +263,21 @@ class SquareEnv(gymnasium.Env):
     def step(self, action):
         width = self.view[2]-self.view[0]
         heigth = self.view[3]-self.view[1]
-        if action == SHRINK_LEFT:
+        if action == Action.SHRINK_LEFT:
             self.view[0] = self.view[0] + width*0.15
-        elif action == SHRINK_TOP:
+        elif action == Action.SHRINK_TOP:
             self.view[1] = self.view[1] + heigth*0.15
-        elif action == SHRINK_RIGHT:
+        elif action == Action.SHRINK_RIGHT:
             self.view[2] = self.view[2] - width*0.15
-        elif action == SHRINK_BOTTOM:
+        elif action == Action.SHRINK_BOTTOM:
             self.view[3] = self.view[3] - heigth*0.15
-        elif action == SHRINK_LEFT_SMALL:
+        elif action == Action.SHRINK_LEFT_SMALL:
             self.view[0] = self.view[0] + width*0.025
-        elif action == SHRINK_TOP_SMALL:
+        elif action == Action.SHRINK_TOP_SMALL:
             self.view[1] = self.view[1] + heigth*0.025
-        elif action == SHRINK_RIGHT_SMALL:
+        elif action == Action.SHRINK_RIGHT_SMALL:
             self.view[2] = self.view[2] - width*0.025
-        elif action == SHRINK_BOTTOM_SMALL:
+        elif action == Action.SHRINK_BOTTOM_SMALL:
             self.view[3] = self.view[3] - heigth*0.025
         obs = self.get_observation()
 
@@ -282,7 +285,7 @@ class SquareEnv(gymnasium.Env):
 
         bb = BoundingBox(self.view, BoundingBoxType.TWO_CORNERS)
 
-        if action == STOP:
+        if action == Action.STOP:
             reward, terminated = self.calculate_reward_dense(bb, True)
             self.view = [0, 0, 1, 1]
             if not terminated:
@@ -303,7 +306,7 @@ class SquareEnv(gymnasium.Env):
         if self.render_mode == 'none' or self.render_mode is None:
             return
         obs = self.get_observation()
-        if (self._state_type == STATE_IMAGE_ONLY):
+        if (self._state_type == ObservationType.STATE_IMAGE_ONLY):
             obs = obs[0]
         else:
             obs = obs["image"][0]

@@ -16,7 +16,6 @@ class NodeBoundingBoxBased():
         self.contour = contour
         self.parent: NodeBoundingBoxBased | None = None
         self.children: list[NodeBoundingBoxBased] = []
-        self.image = False
         self.root = False
 
     def add_node(self, node: 'NodeBoundingBoxBased'):
@@ -72,7 +71,7 @@ def make_bb_tree(contours: Sequence[MatLike], img_w: int, img_h: int) -> NodeBou
 
     root = NodeBoundingBoxBased(BoundingBox(
         (0, 0, img_w, img_h), BoundingBoxType.OPEN_CV, img_w, img_h), cast(MatLike, np.array([[[0, 0]], [[img_w-1, 0]], [[img_w-1, img_h-1]], [[0, img_h-1]]])))
-    if (nodes[0]).bb.iou(root.bb) > 0.98:
+    if len(nodes) > 0 and nodes[0].bb.iou(root.bb) > 0.98:
         root = nodes[0]
     root.root = True
     for n in nodes:
@@ -118,7 +117,7 @@ def remove_bridges(img: MatLike) -> None:
     img[img == 1] = 255
 
 
-def find_elements_cv(img: MatLike, include_root: bool = True) -> list[BoundingBox]:
+def find_elements_cv(img: MatLike, include_root: bool = True) -> tuple[list[BoundingBox], MatLike]:
     img_h, img_w, _ = img.shape
 
     canny = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -164,9 +163,9 @@ def find_elements_cv(img: MatLike, include_root: bool = True) -> list[BoundingBo
     
     if not include_root:
         merged.sort(key=lambda x: x.area(), reverse=True)
-        return merged[1:]
+        return merged[1:], canny
 
-    return merged
+    return merged, canny
 
 if __name__ == "__main__":
     dataset_folder = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\dataset_big"
@@ -176,7 +175,7 @@ if __name__ == "__main__":
         img = cv2.imread(p)
         img_copy = img.copy()
         start = time()
-        boxes = find_elements_cv(img)
+        boxes, _ = find_elements_cv(img)
         print(time()-start)
         draw_bounding_boxes(img_copy, boxes, (255, 255, 0))
         #cv2.imshow("before", img_copy)
