@@ -53,6 +53,18 @@ class Node():
         for c in self.children.copy():
             c.filter_nodes(f, edged_image)
 
+    def draw_nodes(self, f: Callable[['Node'], bool], edged_image: MatLike, color) -> None:
+        should_be_discarded = f(self)
+        if (should_be_discarded and self.parent is not None):
+            for c in self.children.copy():
+                c.draw_nodes(lambda x: True, edged_image, color)
+            cv2.drawContours(
+                edged_image, [self.contour], -1, color, 2)
+            return
+
+        for c in self.children.copy():
+            c.draw_nodes(f, edged_image, color)
+
     def get_bbs(self, result: list[BoundingBox] | None = None) -> list[BoundingBox]:
         if result is None:
             result = []
@@ -72,7 +84,7 @@ def make_bb_tree(contours: Sequence[MatLike], img_w: int, img_h: int) -> Node:
     root = Node(BoundingBox(
         (0, 0, img_w, img_h), BoundingBoxType.OPEN_CV, img_w, img_h), cast(MatLike, np.array([[[0, 0]], [[img_w-1, 0]], [[img_w-1, img_h-1]], [[0, img_h-1]]])))
     if len(nodes) > 0 and nodes[0].bb.iou(root.bb) > 0.98:
-        root.contour = nodes[0].contour
+        root = nodes[0]
     root.root = True
     for n in nodes:
         if n.root:
@@ -127,15 +139,29 @@ def find_elements_cv(img: MatLike, include_root: bool = True) -> tuple[list[Boun
     canny = cv2.morphologyEx(canny, cv2.MORPH_DILATE, kernel)
     remove_bridges(canny)
 
+    edged = np.zeros_like(img)
+
+    cv2.imshow("lol", canny)
+
     contours, _ = cv2.findContours(
         canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     root = make_bb_tree(contours, img_w, img_h)
 
     # Flter out too small elements
+    root.draw_nodes(lambda x: True, edged, (255,255,255))
+
+    root.draw_nodes(lambda x: contour_inside(x.contour, canny), edged, (255, 0, 255))
+    root.draw_nodes(lambda x: cv2.contourArea(cv2.convexHull(x.contour), False) / x.bb.abs_area() < 0.75 and 2.5 < cv2.minAreaRect(x.contour)[2] < 87.5, edged, (0, 255, 255))
+    root.draw_nodes(lambda x: 10 < cv2.minAreaRect(x.contour)[2] < 80 and not (0.5 < x.bb.aspect_ratio() < 1.5), edged, (255, 255, 0))
+    root.draw_nodes(lambda x: x.parent is not None and (x.parent.bb.abs_height() < 100 and x.parent.bb.abs_width() < 100), edged, (0,255,0))
+    root.draw_nodes(lambda x: min(x.bb.abs_width(), x.bb.abs_height()) < 15, edged, (0,0,255))
+    root.draw_nodes(lambda x: max(x.bb.abs_width(), x.bb.abs_height()) < 30, edged, (0,0,255))
+
+
     root.filter_nodes(lambda x: max(x.bb.abs_width(), x.bb.abs_height()) < 30, canny)
     root.filter_nodes(lambda x: min(x.bb.abs_width(), x.bb.abs_height()) < 15, canny)
-
+    cv2.imwrite("thesis_images/images/filter.jpg", edged)
     # Small elements can not have children
     root.filter_nodes(lambda x: x.parent is not None and (
         x.parent.bb.abs_height() < 100 and x.parent.bb.abs_width() < 100), canny)
@@ -168,7 +194,7 @@ def find_elements_cv(img: MatLike, include_root: bool = True) -> tuple[list[Boun
 
 if __name__ == "__main__":
     dataset_folder = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\dataset_big"
-    paths = [join(dataset_folder, f) for f in listdir(
+    """paths = [join(dataset_folder, f) for f in listdir(
         dataset_folder) if isfile(join(dataset_folder, f))]
     for p in paths:
         img = cv2.imread(p)
@@ -179,4 +205,10 @@ if __name__ == "__main__":
         draw_bounding_boxes(img_copy, boxes, (255, 255, 0))
         #cv2.imshow("before", img_copy)
         #if chr(cv2.waitKey(0)) == 'q':
-        #    break
+        #    break"""
+    
+    img = cv2.imread(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\cv\testing_data\100oper.ru.jpg")
+    boxes, _ = find_elements_cv(img)
+    draw_bounding_boxes(img, boxes, (255, 255, 0))
+    cv2.imshow("before", img)
+    cv2.waitKey(0)

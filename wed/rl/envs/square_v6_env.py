@@ -17,7 +17,7 @@ PUNISH_IOU = 3
 
 register(
     id='square-v6',
-    entry_point='square_v6_env:SquareEnv'
+    entry_point='rl.envs.square_v6_env:SquareEnv'
 )
 
 def draw_triangle(bb: RectI, image: MatLike) -> None:

@@ -12,6 +12,8 @@ from gymnasium.wrappers import TimeLimit
 from rl.nn.bigger_net_feature_extractor import BiggerNetExtractor
 from rl.nn.resnet_feature_extractor import ResNetExtractor
 from rl.nn.combined_feature_extractor import CustomCombinedExtractor
+from rl.nn.resnet_combined_feature_extractor import ResNetCombinedExtractor
+from rl.nn.squeezenet_combined_feature_extractor import SqueezeNetCombinedExtractor
 from rl.nn.schedules import linear_schedule
 
 ENV = 'square-v9-discrete'
@@ -34,22 +36,28 @@ def train():
     vec_env = VecMonitor(vec_env)
 
     policy_kwargs_default = dict(
-        net_arch=[dict(pi=[512], vf=[512])],
+        net_arch=[dict(pi=[1024, 1024], vf=[1024, 1024])],
         activation_fn=nn.ReLU,
         normalize_images=False,
-        features_extractor_class=CustomCombinedExtractor,
+        features_extractor_class=SqueezeNetCombinedExtractor,
     )
 
     policy_kwargs_bigger_net = dict(
         features_extractor_class=BiggerNetExtractor,
         features_extractor_kwargs=dict(features_dim=512),
-        net_arch=[dict(pi=[64], vf=[64])],
+        net_arch=[dict(pi=[256, 128], vf=[256, 128])],
         ortho_init=False,
         activation_fn=nn.Tanh
     )
 
     policy_kwargs_resnet = dict(
         features_extractor_class=ResNetExtractor,
+        features_extractor_kwargs=dict(features_dim=512),
+        net_arch=[dict(pi=[256, 128], vf=[256, 128])],
+    )
+
+    policy_kwargs_resnet_combined = dict(
+        features_extractor_class=ResNetCombinedExtractor,
         features_extractor_kwargs=dict(features_dim=512),
         net_arch=[dict(pi=[256, 128], vf=[256, 128])],
     )

@@ -70,8 +70,8 @@ class SquareEnv(gymnasium.Env):
         else:
             raise Exception("Unknown State type")
 
-    def reset(self, seed: int | None = None, options: dict[str, Any] | None = None):
-        super().reset(seed=seed)
+    def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
+        super().reset(seed=seed, options=options)
         random.seed(seed)
         np.random.seed(seed)
 
@@ -82,7 +82,7 @@ class SquareEnv(gymnasium.Env):
         # Curriculum learning
         if (len(self.reward_archive) >= 100):
             avg = sum(self.reward_archive)/len(self.reward_archive)
-            if (avg > 0.8):
+            if (avg > 0.7):
                 self.max_bbs += 1
                 print(f"Increased difficulty of env {self.name} to {self.max_bbs}")
                 try:
@@ -169,7 +169,7 @@ class SquareEnv(gymnasium.Env):
             interp_x = cv2.INTER_AREA
 
         img_x_scaled = cast(NDArray[np.uint8], cv2.resize(img, (width, h), interpolation=interp_x))
-        img_x_scaled[img_x_scaled > 0] = 255
+        #img_x_scaled[img_x_scaled > 0] = 255
 
         if height > h:
             interp_y = cv2.INTER_NEAREST
@@ -177,7 +177,7 @@ class SquareEnv(gymnasium.Env):
             interp_y = cv2.INTER_AREA
 
         img_final = cast(NDArray[np.uint8], cv2.resize(img_x_scaled, (width, height), interpolation=interp_y))
-        img_final[img_final > 0] = 255
+        #img_final[img_final > 0] = 255
         return img_final
 
 
@@ -189,6 +189,7 @@ class SquareEnv(gymnasium.Env):
 
         if (len(leaves) == 0):
             print(self.ground_truth_labels, self.view)
+            print(self.base_img_path)
             # This can happen in same very rare edge cases when two lines are on top of one another
             leaves = overlaping
 

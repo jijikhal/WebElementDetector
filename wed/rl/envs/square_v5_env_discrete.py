@@ -12,7 +12,7 @@ from gymnasium.wrappers import RescaleAction
 
 register(
     id='square-v5-discrete',
-    entry_point='square_v5_env_discrete:SquareEnv'
+    entry_point='rl.envs.square_v5_env_discrete:SquareEnv'
 )
 
 SHRINK_LEFT = 0

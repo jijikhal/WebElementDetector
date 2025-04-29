@@ -12,7 +12,7 @@ from rl.envs.image_generator import generete_hierarchy, Node
 
 register(
     id='square-v7',
-    entry_point='square_v7_env:SquareEnv'
+    entry_point='rl.envs.square_v7_env:SquareEnv'
 )
 
 def draw_rect(bb: RectI, image: MatLike) -> None:

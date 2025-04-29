@@ -8,11 +8,11 @@ from cv2.typing import MatLike
 import math
 from random import uniform
 from stable_baselines3.common.env_checker import check_env
-from gymnasium.wrappers.rescale_action import RescaleAction
+from gymnasium.wrappers import RescaleAction
 
 register(
     id='square-v4',
-    entry_point='square_v4_env:SquareEnv'
+    entry_point='rl.envs.square_v4_env:SquareEnv'
 )
 
 def draw_triangle(bb: RectI, image: MatLike) -> None:

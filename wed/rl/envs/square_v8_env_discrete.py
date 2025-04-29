@@ -84,7 +84,7 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
 
 class SquareEnv(gymnasium.Env):
     metadata = {'render_modes': ['human','none', 'rgb_array_list', 'rgb_array']} 
-    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = r"rl\dataset_big", start_rects: int = 3, name: str = "env", state_type = STATE_IMAGE_ONLY, padding: float = 0.00) -> None:
+    def __init__(self, height: int = 100, width: int = 100, render_mode=None, dataset_folder: str = r"rl\dataset_big", start_rects: int = 3, name: str = "env", state_type = ObservationType.STATE_IMAGE_ONLY, padding: float = 0.00) -> None:
         super().__init__()
         self.height: int = height
         self.width: int = width
