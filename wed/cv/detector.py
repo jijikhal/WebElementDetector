@@ -120,29 +120,29 @@ def remove_bridges(img: MatLike) -> None:
 def find_elements_cv(img: MatLike, include_root: bool = True) -> tuple[list[BoundingBox], MatLike]:
     img_h, img_w, _ = img.shape
 
-    canny = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    canny = cv2.bilateralFilter(canny, 21, 50, 10)
-    canny = cv2.Canny(canny, 100, 200, L2gradient=True)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    smooth = cv2.bilateralFilter(gray, 21, 50, 10)
+    canny = cv2.Canny(smooth, 100, 200, L2gradient=True)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-    canny = cv2.morphologyEx(canny, cv2.MORPH_DILATE, kernel)
-    remove_bridges(canny)
+    dilated = cv2.morphologyEx(canny, cv2.MORPH_DILATE, kernel)
+    remove_bridges(dilated)
 
     contours, _ = cv2.findContours(
-        canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     root = make_bb_tree(contours, img_w, img_h)
 
     # Flter out too small elements
-    root.filter_nodes(lambda x: max(x.bb.abs_width(), x.bb.abs_height()) < 30, canny)
-    root.filter_nodes(lambda x: min(x.bb.abs_width(), x.bb.abs_height()) < 15, canny)
+    root.filter_nodes(lambda x: max(x.bb.abs_width(), x.bb.abs_height()) < 30, dilated)
+    root.filter_nodes(lambda x: min(x.bb.abs_width(), x.bb.abs_height()) < 15, dilated)
 
     # Small elements can not have children
     root.filter_nodes(lambda x: x.parent is not None and (
-        x.parent.bb.abs_height() < 100 and x.parent.bb.abs_width() < 100), canny)
+        x.parent.bb.abs_height() < 100 and x.parent.bb.abs_width() < 100), dilated)
     # Filter out hole elements
-    root.filter_nodes(lambda x: 10 < cv2.minAreaRect(x.contour)[2] < 80 and not (0.5 < x.bb.aspect_ratio() < 1.5), canny)
-    root.filter_nodes(lambda x: cv2.contourArea(cv2.convexHull(x.contour), False) / x.bb.abs_area() < 0.75 and 2.5 < cv2.minAreaRect(x.contour)[2] < 87.5, canny)
-    root.filter_nodes(lambda x: contour_inside(x.contour, canny), canny)
+    root.filter_nodes(lambda x: 10 < cv2.minAreaRect(x.contour)[2] < 80 and not (0.5 < x.bb.aspect_ratio() < 1.5), dilated)
+    root.filter_nodes(lambda x: cv2.contourArea(cv2.convexHull(x.contour), False) / x.bb.abs_area() < 0.75 and 2.5 < cv2.minAreaRect(x.contour)[2] < 87.5, dilated)
+    root.filter_nodes(lambda x: contour_inside(x.contour, dilated), dilated)
 
     bbs = root.get_bbs()
     merged: list[BoundingBox] = []
@@ -162,9 +162,9 @@ def find_elements_cv(img: MatLike, include_root: bool = True) -> tuple[list[Boun
     
     if not include_root:
         merged.sort(key=lambda x: x.area(), reverse=True)
-        return merged[1:], canny
+        return merged[1:], dilated
 
-    return merged, canny
+    return merged, dilated
 
 if __name__ == "__main__":
     dataset_folder = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\dataset_big"
