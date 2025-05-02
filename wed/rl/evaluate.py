@@ -4,12 +4,12 @@ from stable_baselines3.common.vec_env import VecMonitor, DummyVecEnv
 from gymnasium.wrappers import TimeLimit
 import cv2
 from time import time
-import envs.square_v9_env_discrete
-from envs.square_v9_env_discrete import ObservationType
+import wed.rl.envs.square_v9_env_discrete
+from wed.rl.envs.square_v9_env_discrete import ObservationType
 import numpy as np
 
 ENV = 'square-v9-discrete'
-MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\logs\20250428-214503\best_model\best_model.zip"
+MODEL = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\logs\20250429-204701\best_model\best_model.zip"
 
 # Recreate the environment
 def make_env():

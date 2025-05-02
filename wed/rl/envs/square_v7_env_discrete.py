@@ -12,7 +12,7 @@ from rl.envs.image_generator import generete_hierarchy, Node
 
 register(
     id='square-v7-discrete',
-    entry_point='rl.envs.square_v7_env_discrete:SquareEnv'
+    entry_point='wed.rl.envs.square_v7_env_discrete:SquareEnv'
 )
 
 IOU_THRESHOLD = 0.5

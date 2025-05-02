@@ -1,6 +1,6 @@
 import gymnasium
 from wed.bounding_box import BoundingBox, BoundingBoxType
-import envs.square_v7_env
+import wed.rl.envs.square_v7_env
 import cv2
 import numpy as np
 

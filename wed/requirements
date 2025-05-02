@@ -13,6 +13,7 @@ pip install ultralytics
 
 pip install gdown
 python3 -m gdown 1SBRYKJLMNpYl8jhJu2ehDyDCCz1G7nSm
+python3 -m gdown 14EvLOrI_G_8-8ZA3pkoD2josVXUegfzn
 sudo apt install p7zip-full -y
 7z x music.7z -odataset_bigm
 mv dataset_big/machinery/* dataset_big/

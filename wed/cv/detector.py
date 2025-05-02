@@ -6,7 +6,7 @@ from typing import Callable, Any, Sequence, cast
 from time import time
 import numpy as np
 
-from utils.draw_bb import draw_bounding_boxes
+from wed.utils.draw_bb import draw_bounding_boxes
 from wed.bounding_box import BoundingBox, BoundingBoxType
 
 

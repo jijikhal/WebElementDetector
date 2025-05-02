@@ -12,7 +12,7 @@ from gymnasium.wrappers import RescaleAction
 
 register(
     id='square-v4',
-    entry_point='rl.envs.square_v4_env:SquareEnv'
+    entry_point='wed.rl.envs.square_v4_env:SquareEnv'
 )
 
 def draw_triangle(bb: RectI, image: MatLike) -> None:

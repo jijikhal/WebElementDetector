@@ -1,4 +1,5 @@
 *.pt
+*.zip
 wed/rl/images/*
 wed/rl/logs/*
 wed/rl/graphs/graph_maker.py
@@ -9,6 +10,7 @@ wed/yolo/dataset/*
 wed/yolo/runs/*
 *.jpg
 .vscode
+difficulty_log.txt
 
 
 # Byte-compiled / optimized / DLL files

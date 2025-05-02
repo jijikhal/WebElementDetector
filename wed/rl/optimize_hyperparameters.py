@@ -14,9 +14,9 @@ from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
 import torch
 import torch.nn as nn
-from rl.nn.bigger_net_feature_extractor import BiggerNetExtractor
-import envs.square_v5_env_discrete
-import envs.square_v7_env_discrete
+from wed.rl.nn.bigger_net_feature_extractor import BiggerNetExtractor
+import wed.rl.envs.square_v5_env_discrete
+import wed.rl.envs.square_v7_env_discrete
 
 
 N_TRIALS = 500

@@ -12,7 +12,7 @@ from gymnasium.wrappers import RescaleAction
 
 register(
     id='square-v3',
-    entry_point='rl.envs.square_v3_env:SquareEnv'
+    entry_point='wed.rl.envs.square_v3_env:SquareEnv'
 )
 
 class SquareEnv(gymnasium.Env):

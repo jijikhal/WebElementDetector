@@ -8,11 +8,11 @@ import numpy as np
 import cv2
 from cv2.typing import MatLike
 from stable_baselines3.common.env_checker import check_env
-from rl.envs.image_generator import generete_hierarchy, Node
+from wed.rl.envs.image_generator import generete_hierarchy, Node
 
 register(
     id='square-v7',
-    entry_point='rl.envs.square_v7_env:SquareEnv'
+    entry_point='wed.rl.envs.square_v7_env:SquareEnv'
 )
 
 def draw_rect(bb: RectI, image: MatLike) -> None:

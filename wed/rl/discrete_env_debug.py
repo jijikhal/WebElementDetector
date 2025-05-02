@@ -1,5 +1,5 @@
 import gymnasium as gym
-import envs.square_v9_env_discrete
+import wed.rl.envs.square_v9_env_discrete
 from envs.square_v9_env_discrete import Action, ObservationType
 import cv2
 

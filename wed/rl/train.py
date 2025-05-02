@@ -1,20 +1,20 @@
 import gymnasium as gym
 from stable_baselines3 import SAC, PPO, A2C
 import os
-import envs.square_v9_env_discrete
-from envs.square_v9_env_discrete import ObservationType
+import wed.rl.envs.square_v9_env_discrete
+from wed.rl.envs.square_v9_env_discrete import ObservationType
 import datetime
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecMonitor
 from torch import nn
 from gymnasium.wrappers import TimeLimit
-from rl.nn.bigger_net_feature_extractor import BiggerNetExtractor
-from rl.nn.resnet_feature_extractor import ResNetExtractor
-from rl.nn.combined_feature_extractor import CustomCombinedExtractor
-from rl.nn.resnet_combined_feature_extractor import ResNetCombinedExtractor
-from rl.nn.squeezenet_combined_feature_extractor import SqueezeNetCombinedExtractor
-from rl.nn.schedules import linear_schedule
+from wed.rl.nn.bigger_net_feature_extractor import BiggerNetExtractor
+from wed.rl.nn.resnet_feature_extractor import ResNetExtractor
+from wed.rl.nn.combined_feature_extractor import CustomCombinedExtractor
+from wed.rl.nn.resnet_combined_feature_extractor import ResNetCombinedExtractor
+from wed.rl.nn.squeezenet_combined_feature_extractor import SqueezeNetCombinedExtractor
+from wed.rl.nn.schedules import linear_schedule
 
 ENV = 'square-v9-discrete'
 
@@ -32,7 +32,7 @@ def train():
     best_model_path = os.path.join(log_dir, "best_model")
 
     n_envs = 6
-    vec_env = SubprocVecEnv([make_env(name=f"Train env {i}", start_rects=3, state_type=ObservationType.STATE_IMAGE_AND_VIEW) for i in range(n_envs)])
+    vec_env = SubprocVecEnv([make_env(name=f"Train env {i}", start_rects=3, state_type=ObservationType.STATE_IMAGE_AND_VIEW, dataset_folder=r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\yolo\dataset\images\train") for i in range(n_envs)])
     vec_env = VecMonitor(vec_env)
 
     policy_kwargs_default = dict(
@@ -76,7 +76,7 @@ def train():
     print(sum(p.numel() for p in model.policy.parameters()))
     print(model.policy)
 
-    eval_env = DummyVecEnv([make_env(name="Eval env", start_rects=1000, state_type=ObservationType.STATE_IMAGE_AND_VIEW)])
+    eval_env = DummyVecEnv([make_env(name="Eval env", start_rects=1000, state_type=ObservationType.STATE_IMAGE_AND_VIEW, dataset_folder=r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\yolo\dataset\images\val")])
     eval_env = VecMonitor(eval_env)
 
     eval_callback = EvalCallback(

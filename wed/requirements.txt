@@ -9,7 +9,7 @@ psycopg2-binary==2.9.10
 sb3_contrib==2.5.0
 stable_baselines3==2.5.0
 tensorboard==2.18.0
-torch==2.5.0+cu124
-torchvision==0.20.0+cu124
 tqdm==4.66.2
 ultralytics==8.3.115
+seaborn==0.13.2
+matplotlib==3.8.2

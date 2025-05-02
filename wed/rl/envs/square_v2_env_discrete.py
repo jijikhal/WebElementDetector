@@ -11,7 +11,7 @@ from stable_baselines3.common.env_checker import check_env
 
 register(
     id='square-v2-discrete',
-    entry_point='rl.envs.square_v2_env_discrete:SquareEnv'
+    entry_point='wed.rl.envs.square_v2_env_discrete:SquareEnv'
 )
 
 SHRINK_LEFT = 0
