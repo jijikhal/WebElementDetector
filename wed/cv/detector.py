@@ -1,3 +1,6 @@
+# This file contains the implementation of purly Traditional CV-based detector
+# from Section 5.1 and Appendix B
+
 import cv2
 from cv2.typing import MatLike
 from os import listdir
@@ -11,14 +14,26 @@ from wed.bounding_box import BoundingBox, BoundingBoxType
 
 
 class Node():
+    """Class for the reprezentation of a hierarchy of elements.
+    """
     def __init__(self, bb: BoundingBox, contour: MatLike) -> None:
+        """
+        Args:
+            bb (BoundingBox): Enclosing axis-aligned bounding box of the node.
+            contour (MatLike): The contour represented by this Node.
+        """
         self.bb = bb
         self.contour = contour
         self.parent: Node | None = None
         self.children: list[Node] = []
         self.root = False
 
-    def add_node(self, node: 'Node'):
+    def add_node(self, node: 'Node') -> None:
+        """Adds a child node to this node.
+
+        Args:
+            node (Node): The node to be added as a child.
+        """
         for c in self.children:
             if c.bb.percentage_inside(node.bb) > 0.9:
                 c.add_node(node)
@@ -30,21 +45,37 @@ class Node():
         node.parent = self
 
     def total_child_count(self) -> int:
+        """Returns the total amount of children (including indirect).
+
+        Returns:
+            int: The total child count.
+        """
         total = len(self.children)
         for c in self.children:
             total += c.total_child_count()
         return total
 
     def run_function(self, f: Callable[['Node'], Any]) -> None:
+        """Runs the provided function on self and every child recursivly.
+
+        Args:
+            f (Callable[[&#39;Node&#39;], Any]): The function to be run.
+        """
         f(self)
         for c in self.children:
             c.run_function(f)
 
     def filter_nodes(self, f: Callable[['Node'], bool], edged_image: MatLike) -> None:
+        """Filters out nodes that fulfill the provided predicate and removes their contour from the image.
+
+        Args:
+            f (Callable[[&#39;Node&#39;], bool]): The predicate the node has to fulfill to be removed.
+            edged_image (MatLike): Image to remove the contours from.
+        """
         should_be_discarded = f(self)
         if (should_be_discarded and self.parent is not None):
             for c in self.children.copy():
-                c.filter_nodes(lambda x: True, edged_image)
+                c.filter_nodes(lambda _: True, edged_image)
             self.parent.children.remove(self)
             cv2.drawContours(
                 edged_image, [self.contour], -1, (0,), cv2.FILLED)
@@ -54,6 +85,14 @@ class Node():
             c.filter_nodes(f, edged_image)
 
     def get_bbs(self, result: list[BoundingBox] | None = None) -> list[BoundingBox]:
+        """Returns all bounding boxes in the tree where this node is the root. In pre-order order.
+
+        Args:
+            result (list[BoundingBox] | None, optional): The list to be used as accumulator. If None, creates new list. Defaults to None.
+
+        Returns:
+            list[BoundingBox]: List of all bounding boxes
+        """
         if result is None:
             result = []
 
@@ -65,6 +104,16 @@ class Node():
 
 
 def make_bb_tree(contours: Sequence[MatLike], img_w: int, img_h: int) -> Node:
+    """Creates a hierarchical tree of bounding boxes of the provided contours
+
+    Args:
+        contours (Sequence[MatLike]): The contours
+        img_w (int): Width of the image from which the contours were extracted in pixel
+        img_h (int): Heoght of the image from which the contours were extracted in pixel
+
+    Returns:
+        Node: Root node of the tree
+    """
     nodes: list[Node] = [Node(BoundingBox(cv2.boundingRect(
         c), BoundingBoxType.OPEN_CV, img_w, img_h), c) for c in contours]
     nodes.sort(key=lambda x: x.bb.area(), reverse=True)
@@ -83,6 +132,15 @@ def make_bb_tree(contours: Sequence[MatLike], img_w: int, img_h: int) -> Node:
 
 
 def contour_inside(contour: MatLike, edged_image: MatLike) -> bool:
+    """Determines whether a contour is an inside contour (a contour of a hole) with no children. Not 100 percent reliable
+
+    Args:
+        contour (MatLike): The contour to be judged
+        edged_image (MatLike): Image in which the contour is
+
+    Returns:
+        bool: Whether the contour is an inside contour
+    """
     mask: MatLike = np.zeros_like(edged_image)
     cv2.drawContours(mask, [contour], -1, (255,), thickness=cv2.FILLED)
     mask = cv2.morphologyEx(
@@ -94,6 +152,11 @@ def contour_inside(contour: MatLike, edged_image: MatLike) -> bool:
 
 
 def remove_bridges(img: MatLike) -> None:
+    """Removes one-pixel wide bridges. Made with help of ChatGPT
+
+    Args:
+        img (MatLike): The binary image to remove the brideges from
+    """
     # Create a copy and convert to 0 and 1
     img[img == 255] = 1
 
@@ -118,7 +181,18 @@ def remove_bridges(img: MatLike) -> None:
 
 
 def find_elements_cv(img: MatLike, include_root: bool = True) -> tuple[list[BoundingBox], MatLike]:
+    """Finds elements in the provided screenshot of a webpage.
+
+    Args:
+        img (MatLike): The image to analyze
+        include_root (bool, optional): Whether a root element should be included. Defaults to True.
+
+    Returns:
+        tuple[list[BoundingBox], MatLike]: List of all found element bounding boxes and the resulting binary image used.
+    """
     img_h, img_w, _ = img.shape
+    if (img_h != 900 or img_w != 1440):
+        print("Warning: this detector was designed for images of size 1440 x 900 px and might perform worse on different sizes.")
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     smooth = cv2.bilateralFilter(gray, 21, 50, 10)

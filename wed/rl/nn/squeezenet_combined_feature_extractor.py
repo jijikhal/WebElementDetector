@@ -9,7 +9,7 @@ class SqueezeNetCombinedExtractor(BaseFeaturesExtractor):
         super(SqueezeNetCombinedExtractor, self).__init__(observation_space, features_dim=features_dim)
         # Load pretrained ResNet
         sqeezenet = models.squeezenet1_1(pretrained=True)
-        self.sqeezenet = nn.Sequential(nn.Conv2d(1, 3, kernel_size=1), sqeezenet.features, nn.Flatten())
+        self.sqeezenet = nn.Sequential(nn.Conv2d(1, 3, kernel_size=1), sqeezenet.features, nn.AdaptiveAvgPool2d((1, 1)), nn.Flatten())
         
         with torch.no_grad():
             dummy_input = torch.zeros(1, *observation_space["image"].shape)

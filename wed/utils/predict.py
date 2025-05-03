@@ -1,3 +1,8 @@
+# This file contains classes for all three detectors used in Chapter 5
+
+# The main function can be used to compare predictions and speeds of all
+# three detectors on the same images
+
 from abc import ABC, abstractmethod
 from time import perf_counter_ns
 from cv2.typing import MatLike
@@ -5,37 +10,63 @@ import cv2
 from bounding_box import BoundingBox, BoundingBoxType
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
+from utils.get_files_in_folder import get_files
 from wed.cv.detector import find_elements_cv
 from stable_baselines3 import PPO
 import numpy as np
 from numpy.typing import NDArray
 from typing import cast
 from wed.rl.envs.common import Action
-from os.path import join, isfile
-from os import listdir
 from wed.utils.draw_bb import draw_bounding_boxes
 
 class Detector(ABC):
+    """Class providing a unified API for detectors"""
     @abstractmethod
     def predict(self, img: MatLike) -> list[BoundingBox]:
+        """Locates elements in the provided image.
+
+        Args:
+            img (MatLike): The image to be analyzed (use `cv2.imread` to open the image).
+
+        Returns:
+            list[BoundingBox]: List of bounding box predictions
+        """
         ...
 
     def predict_timed(self, img: MatLike, verbose: bool = True) -> tuple[list[BoundingBox], float]:
+        """Locates elements in the provided image and measures the time taken.
+
+        Args:
+            img (MatLike): The image to be analyzed (use `cv2.imread` to open the image).
+            verbose (bool, optional): Whether the time should be printed to stdout. Defaults to True.
+
+        Returns:
+            tuple[list[BoundingBox], float]: List of bounding box predictions. The time in nanoseconds.
+        """
         start = perf_counter_ns()
         result = self.predict(img)
         end = perf_counter_ns()
-        print(f"Prediction from {self.__class__.__name__} of {len(result)} boxes took {((end-start)/1e6):.2f} ms.")
+        if verbose:
+            print(f"Prediction from {self.__class__.__name__} of {len(result)} boxes took {((end-start)/1e6):.2f} ms.")
         return result, end-start
 
 class YoloDetector(Detector):
-    def __init__(self, model_path: str) -> None:
+    """YOLO based detector"""
+    def __init__(self, model_path: str, device: str = "auto") -> None:
+        """
+        Args:
+            model_path (str): Path to a model file.
+            device (str, optional): On what device the prediction should run. If not specified, chooses best automatically. Example: "gpu0", "cpu". Defaults to "auto".
+        """
         super().__init__()
         self.model = YOLO(model_path, verbose=False)
+        self.device = device
 
     def predict(self, img: MatLike) -> list[BoundingBox]:
-        results: list[Results] = self.model(img, verbose=False)#, device="cpu")
-        bbs: list[BoundingBox] = [BoundingBox(b.tolist(), BoundingBoxType.CENTER) for b in results[0].boxes.xywhn]
-        return bbs
+        results: list[Results] = self.model(img, verbose=False, device=self.device)
+        if (len(result) < 0 or results[0].boxes is None):
+            return []
+        return [BoundingBox(b.tolist(), BoundingBoxType.CENTER) for b in results[0].boxes.xywhn]
     
 class CVDetector(Detector):
     def __init__(self) -> None:
@@ -46,12 +77,18 @@ class CVDetector(Detector):
         return bbs
 
 class RLDetector(Detector):
-    def __init__(self, model_path: str) -> None:
+    def __init__(self, model_path: str, device: str = "auto") -> None:
+        """
+        Args:
+            model_path (str): Path to a model file.
+            device (str, optional): On what device the prediction should run. If not specified, chooses best automatically. Example: "gpu0", "cpu". Defaults to "auto".
+        """
         super().__init__()
-        self.model = PPO.load(model_path)
+        self.model = PPO.load(model_path, device=device)
         self.height = 84
         self.width = 84
         self.view: list[float] = [0, 0, 1, 1]
+        self.device = device
 
     def _scaling(self, img: MatLike, width, height):
         h, w = img.shape[:2]
@@ -136,7 +173,6 @@ class RLDetector(Detector):
 
     def predict(self, img: MatLike) -> list[BoundingBox]:
         self.view: list[float] = [0, 0, 1, 1]
-        img_h, img_w, _ = img.shape
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         smooth = cv2.bilateralFilter(gray, 21, 50, 10)
         canny = cv2.Canny(smooth, 100, 200, L2gradient=True)
@@ -150,32 +186,20 @@ class RLDetector(Detector):
         predictions: list[BoundingBox] = []
         box_steps = 0
 
-        start = perf_counter_ns()
         while not terminated and steps < 10000:
-            print((perf_counter_ns()-start)/1e6)
             obs = self._get_observation()
             action, _ = self.model.predict(obs, deterministic=True)
-            start = perf_counter_ns()
             if (box_steps > 100):
                 action = Action.STOP
-            terminated, bb = self._step(action)
+            terminated, bb = self._step(Action(action))
             terminated = terminated or not np.any(self.dilated)
             if bb is not None:
                 box_steps = 0
-                #img_cpy = img.copy()
-                #cv2.rectangle(img_cpy, bb.get_rect(img_w, img_h), (0, 0, 255), 2)
-                #cv2.imshow("selection", img_cpy)
                 x1, x2, y1, y2 = self._get_cutout_coords()
-                #print(x1, x2, y1, y2)
                 labels_to_remove = np.unique(labels[y1:y2, x1:x2])
                 labels_to_remove = labels_to_remove[labels_to_remove != 0]
-                #print(labels_to_remove)
-                #dil_copy = self.dilated.copy()
-                #dil_copy[np.isin(labels, labels_to_remove) & (self.dilated == 255)] = 128
                 self.dilated[np.isin(labels, labels_to_remove)] = 0
-                #cv2.imshow("after", dil_copy)
                 predictions.append(bb)
-                #cv2.waitKey(0)
                 self.view = [0, 0, 1, 1]
 
             steps += 1
@@ -184,24 +208,22 @@ class RLDetector(Detector):
         return predictions
 
 if __name__ == "__main__":
-    #cv_detector = CVDetector()
-    #yolo_detector = YoloDetector(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\yolo\runs\detect\train5\weights\best.pt")
-    start = perf_counter_ns()
-    rl_detector = RLDetector(r"rl\logs\v9d_curriculum0.7_grayscale_squeez_large_samedata\best_model\best_model.zip")
-    print(f"Init took {(perf_counter_ns()-start)/1e9} s.")
+    cv_detector = CVDetector()
+    yolo_detector = YoloDetector(r"yolo\runs\detect\train5\weights\best.pt")
+    rl_detector = RLDetector(r"rl\logs\20250502-200233\best_model\best_model.zip")
 
     images = r"yolo\dataset\images\test"
-    #paths = [join(images, f) for f in listdir(images) if isfile(join(images, f))]
-    paths = [r"C:\Users\Jindra\Downloads\isik.jpg"]
+    paths = get_files(images, shuffle=True, seed=0)
+    #paths = [r"C:\Users\Jindra\Downloads\isik.jpg"]
     for i in paths:
         image = cv2.imread(i)
         cv_img, yolo_img, rl_img = [image.copy() for _ in range(3)]
 
-        #result, _ = cv_detector.predict_timed(image)
-        #draw_bounding_boxes(cv_img, result, (0, 0, 255))
+        result, _ = cv_detector.predict_timed(image)
+        draw_bounding_boxes(cv_img, result, (0, 0, 255))
 
-        #result, _ = yolo_detector.predict_timed(image)
-        #draw_bounding_boxes(yolo_img, result, (0, 0, 255))
+        result, _ = yolo_detector.predict_timed(image)
+        draw_bounding_boxes(yolo_img, result, (0, 0, 255))
 
         result, _ = rl_detector.predict_timed(image)
         draw_bounding_boxes(rl_img, result, (0, 0, 255))

@@ -73,6 +73,8 @@ def train():
                 gae_lambda=0.95,
                 vf_coef=0.5,
                 )
+    old_model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\logs\20250502-200233\best_model\best_model.zip")
+    model.policy.load_state_dict(old_model.policy.state_dict())
     print(sum(p.numel() for p in model.policy.parameters()))
     print(model.policy)
 

@@ -1,12 +1,27 @@
+# Detector used for the environment with rectangles based on real websites (Section 4.16)
 from wed.bounding_box import BoundingBox, BoundingBoxType, RectI
 from cv2.typing import MatLike
 import cv2
 
 def draw_rect(bb: RectI, image: MatLike) -> None:
+    """Draws a rectangle in the image
+
+    Args:
+        bb (RectI): Rectangle in a (x, y, w, h) format in pixels
+        image (MatLike): Image to draw the rectangle into
+    """
     x, y, w, h = bb
     cv2.rectangle(image, (x, y), (x+w-1, y+h-1), (255,), 1)
 
 def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
+    """Finds elements in an website screenshot image. Does not work that well.
+
+    Args:
+        img (MatLike): Image to analyze
+
+    Returns:
+        list[BoundingBox]: List of the found element bounding boxes
+    """
     copy_for_show = img.copy()
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     smoothed = cv2.bilateralFilter(gray, 21, 50, 0)

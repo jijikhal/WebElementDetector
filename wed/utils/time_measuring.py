@@ -1,3 +1,7 @@
+# Utility for measuring prediction times, init times and first prediction times
+
+# Used in Section 5.5
+
 from wed.utils.predict import Detector, YoloDetector, CVDetector, RLDetector
 from wed.utils.get_files_in_folder import get_files
 from typing import Callable
@@ -9,23 +13,30 @@ import seaborn as sns
 from tqdm import tqdm
 import numpy as np
 
-def run_test(detector_func: Callable[[], Detector], data_folder: str, run_count: int, predictions_per_run: int, seed: int|None = None):
+def run_test(detector_func: Callable[[], Detector], data_dir: str, run_count: int, predictions_per_run: int, seed: int | None = None):
+    """Runs timed tests on a detector
+
+    Args:
+        detector_func (Callable[[], Detector]): A parameterless function that when called returns a Detector to be used
+        data_dir (str): A directory of images to be used.
+        run_count (int): How many full test runs should be done (includes detector inicialization, first prediction and predictions_per_run predictions).
+        predictions_per_run (int): How many predictions +1 (the first) should be ran in each test.
+        seed (int | None, optional): Seed for random image selection. Defaults to None.
+    """
     init_times: list[float] = []
     first_run_times: list[float] = []
     predict_run_times: dict[int, list[float]] = {}
 
     random.seed(seed)
-    files = get_files(data_folder)
+    files = get_files(data_dir)
     get_rand_image = lambda: cv2.imread(files[random.randint(0, len(files)-1)])
 
     for i in range(run_count):
         print(f"Starting run {i}")
-        #print("Inicializing detector")
         start = perf_counter()
         detector = detector_func()
         end = perf_counter()
         init_time = end-start
-        #print(f"Inicialization took {init_time/1e6:.2f} ms")
         init_times.append(init_time*1000)
 
         img = get_rand_image()
@@ -36,7 +47,7 @@ def run_test(detector_func: Callable[[], Detector], data_folder: str, run_count:
 
         first_run_times.append(first_predict_time*1000)
 
-        for _ in range(predictions_per_run):
+        for _ in tqdm(range(predictions_per_run)):
             img = get_rand_image()
             start = perf_counter()
             result = detector.predict(img)
@@ -56,7 +67,12 @@ def run_test(detector_func: Callable[[], Detector], data_folder: str, run_count:
 
     plot_time_per_count(predict_run_times)
 
-def plot_time_per_count(data: dict[int, list[float]]):
+def plot_time_per_count(data: dict[int, list[float]]) -> None:
+    """Plots predictions into a boxplot graph. Made with the help of ChatGPT
+
+    Args:
+        data (dict[int, list[float]]): data to be ploted in format {object_cont: [pred_time_0, pred_time_1, ...]}
+    """
     bin_edges = list(range(0, 101, 10))  # Bins: 0–10, 11–20, ..., 91–100
     bin_labels = [f"{i+1}-{i+10}" for i in range(0, 100, 10)]
 
@@ -88,13 +104,13 @@ def plot_time_per_count(data: dict[int, list[float]]):
 
 
 if __name__ == "__main__":
-    r"""run_test(
+    run_test(
         lambda: YoloDetector(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\yolo\runs\detect\train5\weights\best.pt"),
         r"yolo\dataset\images\test",
         100,
         1,
         1
-    )"""
+    )
 
     run_test(
         lambda: CVDetector(),
