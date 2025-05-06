@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from time import perf_counter_ns
 from cv2.typing import MatLike
 import cv2
-from bounding_box import BoundingBox, BoundingBoxType
+from bounding_box import BoundingBox, BoundingBoxType, RectI
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from utils.get_files_in_folder import get_files
@@ -91,23 +91,25 @@ class RLDetector(Detector):
         self.device = device
 
     def _scaling(self, img: MatLike, width, height):
+        """Scales image to corret size using correct interpolation methods"""
         h, w = img.shape[:2]
-        if width > w:
+        if width > w: # Upscale
             interp_x = cv2.INTER_NEAREST
-        else:
+        else: # Downscale
             interp_x = cv2.INTER_AREA
 
         img_x_scaled = cast(NDArray[np.uint8], cv2.resize(img, (width, h), interpolation=interp_x))
 
-        if height > h:
+        if height > h: # Upscale
             interp_y = cv2.INTER_NEAREST
-        else:
+        else: # Downscale
             interp_y = cv2.INTER_AREA
 
         img_final = cast(NDArray[np.uint8], cv2.resize(img_x_scaled, (width, height), interpolation=interp_y))
         return img_final
 
-    def _get_cutout_coords(self) -> tuple[int,int,int,int]:
+    def _get_cutout_coords(self) -> RectI:
+        """Returns coordinates of the cutout window ensuring at least 1x1 image"""
         img_h, img_w = self.dilated.shape
 
         # Calculate area so that it is always at least 1x1 pixels in a valid spot
@@ -133,6 +135,7 @@ class RLDetector(Detector):
         return x1, x2, y1, y2
 
     def _get_observation(self) -> dict[str, MatLike]:
+        """Gets the current observation"""
         x1, x2, y1, y2 = self._get_cutout_coords()
 
         view_cutout = self.dilated[y1:y2, x1:x2]
@@ -142,7 +145,8 @@ class RLDetector(Detector):
         
         return {"image":img, "view": np.array(self.view, dtype=np.float32)}
     
-    def _step(self, action: Action) -> tuple[bool, BoundingBox|None]:
+    def _step(self, action: Action) -> tuple[bool, BoundingBox | None]:
+        """Performs one step of the env based on the provided action"""
         width = self.view[2]-self.view[0]
         heigth = self.view[3]-self.view[1]
         if action == Action.SHRINK_LEFT:
@@ -186,10 +190,11 @@ class RLDetector(Detector):
         predictions: list[BoundingBox] = []
         box_steps = 0
 
+        model_state = None # Only used for recurrent policies (not used in the thesis)
         while not terminated and steps < 10000:
             obs = self._get_observation()
-            action, _ = self.model.predict(obs, deterministic=True)
-            if (box_steps > 100):
+            action, model_state = self.model.predict(obs, model_state, deterministic=True)
+            if (box_steps > 1000):
                 action = Action.STOP
             terminated, bb = self._step(Action(action))
             terminated = terminated or not np.any(self.dilated)
@@ -209,12 +214,12 @@ class RLDetector(Detector):
 
 if __name__ == "__main__":
     cv_detector = CVDetector()
-    yolo_detector = YoloDetector(r"yolo\runs\detect\train5\weights\best.pt")
-    rl_detector = RLDetector(r"rl\logs\20250502-200233\best_model\best_model.zip")
+    yolo_detector = YoloDetector(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\runs\detect\train2\weights\best.pt")
+    rl_detector = RLDetector(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\logs\20250502-200233\best_model\best_model.zip")
 
     images = r"yolo\dataset\images\test"
-    paths = get_files(images, shuffle=True, seed=0)
-    #paths = [r"C:\Users\Jindra\Downloads\isik.jpg"]
+    #paths = get_files(images, shuffle=True, seed=0)
+    paths = [r"C:\Users\Jindra\Downloads\gov.jpg", r"C:\Users\Jindra\Downloads\isik.jpg"]*20
     for i in paths:
         image = cv2.imread(i)
         cv_img, yolo_img, rl_img = [image.copy() for _ in range(3)]
@@ -225,8 +230,8 @@ if __name__ == "__main__":
         result, _ = yolo_detector.predict_timed(image)
         draw_bounding_boxes(yolo_img, result, (0, 0, 255))
 
-        result, _ = rl_detector.predict_timed(image)
-        draw_bounding_boxes(rl_img, result, (0, 0, 255))
+        #result, _ = rl_detector.predict_timed(image)
+        #draw_bounding_boxes(rl_img, result, (0, 0, 255))
 
         cv2.imshow("CV detector", cv_img)
         cv2.imshow("YOLO detector", yolo_img)

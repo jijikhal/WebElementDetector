@@ -11,4 +11,4 @@ if __name__ == "__main__":
     model.info()
 
     # Train the model on the COCO8 example dataset for 100 epochs
-    results = model.train(data=r"yolo\dataset\dataset.yaml", epochs=100, imgsz=640)
+    results = model.train(data=r"yolo\dataset\dataset.yaml", epochs=10000, imgsz=640)

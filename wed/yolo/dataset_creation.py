@@ -30,13 +30,13 @@ def create_labels(images: str, labels: str) -> None:
                 f.write(f"0 {x:6f} {y:6f} {w:6f} {h:6f}\n")
 
 
-def train_test_val_split(image_folder: str, result_folder: str, ratio: tuple[int, int, int], shuffle_seed: int | None = None):
+def train_test_val_split(image_folder: str, result_folder: str, ratio: tuple[int, int, int], shuffle_seed: int | None = None, max_train_size: int = 10000000000):
     image_files = listdir(image_folder)
     tr, v, te = ratio
     total_ratio = tr+v+te
     v_count = round(v/total_ratio*len(image_files))
     te_count = round(te/total_ratio*len(image_files))
-    tr_count = len(image_files)-v_count-te_count
+    tr_count = min(len(image_files)-v_count-te_count, max_train_size)
 
     seed(shuffle_seed)
     shuffle(image_files)
@@ -68,7 +68,7 @@ def train_test_val_split(image_folder: str, result_folder: str, ratio: tuple[int
         except Exception as e:
             print(f"Error when copying image {i}: {e}")
 
-    for i in tqdm(image_files[tr_count+v_count:], desc="Copying test data"):
+    for i in tqdm(image_files[tr_count+v_count:tr_count+v_count+te_count], desc="Copying test data"):
         try:
             copy(join(image_folder, i), join(te_img_path, i))
         except Exception as e:
@@ -81,5 +81,5 @@ def train_test_val_split(image_folder: str, result_folder: str, ratio: tuple[int
 
 if __name__ == "__main__":
     IMAGE_FOLDER = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\dataset_big"
-    RESULT_FOLDER = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\yolo\dataset"
-    train_test_val_split(IMAGE_FOLDER, RESULT_FOLDER, (8, 1, 1), 0)
+    RESULT_FOLDER = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\yolo\dataset_100"
+    train_test_val_split(IMAGE_FOLDER, RESULT_FOLDER, (8, 1, 1), 0, 100)
