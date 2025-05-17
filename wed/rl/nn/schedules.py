@@ -24,6 +24,6 @@ def custom_schedule(initial_value: float):
         elif current_step < 1_600_000:
             return initial_value * 0.1 * (1 - (current_step-1_150_000) / 500_000)
         else:
-            return initial_value * 0.01  # Hold at 10% of initial value after 200k steps
+            return initial_value * 0.01
 
     return func

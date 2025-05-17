@@ -11,6 +11,7 @@ import numpy as np
 
 from wed.utils.draw_bb import draw_bounding_boxes
 from wed.bounding_box import BoundingBox, BoundingBoxType
+from wed.utils.get_files_in_folder import get_files
 
 
 class Node():
@@ -241,9 +242,8 @@ def find_elements_cv(img: MatLike, include_root: bool = True) -> tuple[list[Boun
     return merged, dilated
 
 if __name__ == "__main__":
-    dataset_folder = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\dataset_big"
-    paths = [join(dataset_folder, f) for f in listdir(
-        dataset_folder) if isfile(join(dataset_folder, f))]
+    dataset_folder = r"rl\dataset_big"
+    paths = get_files(dataset_folder)
     for p in paths:
         img = cv2.imread(p)
         img_copy = img.copy()
@@ -251,6 +251,6 @@ if __name__ == "__main__":
         boxes, _ = find_elements_cv(img)
         print(time()-start)
         draw_bounding_boxes(img_copy, boxes, (255, 255, 0))
-        #cv2.imshow("before", img_copy)
-        #if chr(cv2.waitKey(0)) == 'q':
-        #    break
+        cv2.imshow("predictions", img_copy)
+        if chr(cv2.waitKey(0)) == 'q':
+            break

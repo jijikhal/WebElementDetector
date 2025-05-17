@@ -1,3 +1,4 @@
+# This file contains script for generating dataset for the YOLO model. Used in Section 5.2. The YAML file must be created manually.
 from os import listdir, makedirs
 from os.path import isfile, join
 import cv2
@@ -8,6 +9,12 @@ from random import seed, shuffle
 
 
 def create_labels(images: str, labels: str) -> None:
+    """Generates labels for provided images in the YOLOv8 format
+
+    Args:
+        images (str): path to folder with images to be labeled
+        labels (str): path to folder where labels are to be stored
+    """
     makedirs(labels, exist_ok=True)
 
     image_files = listdir(images)
@@ -30,13 +37,24 @@ def create_labels(images: str, labels: str) -> None:
                 f.write(f"0 {x:6f} {y:6f} {w:6f} {h:6f}\n")
 
 
-def train_test_val_split(image_folder: str, result_folder: str, ratio: tuple[int, int, int], shuffle_seed: int | None = None, max_train_size: int = 10000000000):
+def train_test_val_split(image_folder: str, result_folder: str, ratio: tuple[int, int, int], shuffle_seed: int | None = None, max_train_size: int | None = None):
+    """Splits the provided data into train/val/test and generates labels
+
+    Args:
+        image_folder (str): path to folder with all images
+        result_folder (str): path to folder where folders for labels and images will be created
+        ratio (tuple[int, int, int]): The ratio of train:val:test. Recommended is (8, 1, 1)
+        shuffle_seed (int | None, optional): Seed to use when shuffeling the data. Defaults to None.
+        max_train_size (int | None, optional): Largest allowed size of train dataset. Defaults to None.
+    """
     image_files = listdir(image_folder)
     tr, v, te = ratio
     total_ratio = tr+v+te
     v_count = round(v/total_ratio*len(image_files))
     te_count = round(te/total_ratio*len(image_files))
-    tr_count = min(len(image_files)-v_count-te_count, max_train_size)
+    tr_count = len(image_files)-v_count-te_count
+    if max_train_size is not None:
+        tr_count = min(tr_count, max_train_size)
 
     seed(shuffle_seed)
     shuffle(image_files)
@@ -80,6 +98,6 @@ def train_test_val_split(image_folder: str, result_folder: str, ratio: tuple[int
 
 
 if __name__ == "__main__":
-    IMAGE_FOLDER = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\dataset_big"
-    RESULT_FOLDER = r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\yolo\dataset_100"
+    IMAGE_FOLDER = r"rl\dataset_big"
+    RESULT_FOLDER = r"yolo\dataset_100"
     train_test_val_split(IMAGE_FOLDER, RESULT_FOLDER, (8, 1, 1), 0, 100)

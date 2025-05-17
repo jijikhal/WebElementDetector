@@ -1,4 +1,4 @@
-# https://docs.ultralytics.com/models/yolov8/#performance-metrics
+# This script can be used to test a trained YOLO model.
 
 from ultralytics import YOLO
 from ultralytics.engine.results import Results

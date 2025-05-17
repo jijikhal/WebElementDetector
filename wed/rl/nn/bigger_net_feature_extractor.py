@@ -1,3 +1,4 @@
+# Feature extractor used in Subsection 4.7.3, generated with help from ChatGPT
 import torch as th
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from torch import nn

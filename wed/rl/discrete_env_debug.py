@@ -1,3 +1,5 @@
+# This file contains a script that allows to control an environment with arrows, WASD and spacebar.
+
 import gymnasium as gym
 import wed.rl.envs.square_v9_env_discrete
 from envs.square_v9_env_discrete import Action, ObservationType

@@ -61,8 +61,8 @@ def run_test(detector_func: Callable[[], Detector], data_dir: str, run_count: in
     print(init_times)
     print(first_run_times)
 
-    print("median", np.percentile(init_times, 50))
-    print("median", np.percentile(first_run_times, 50))
+    print("median init", np.percentile(init_times, 50))
+    print("median first run", np.percentile(first_run_times, 50))
     #print(predict_run_times)
 
     plot_time_per_count(predict_run_times)
@@ -105,7 +105,7 @@ def plot_time_per_count(data: dict[int, list[float]]) -> None:
 
 if __name__ == "__main__":
     run_test(
-        lambda: YoloDetector(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\yolo\runs\detect\train5\weights\best.pt"),
+        lambda: YoloDetector(r"runs\detect\8000_dataset\weights\best.pt"),
         r"yolo\dataset\images\test",
         100,
         1,
@@ -117,6 +117,14 @@ if __name__ == "__main__":
         r"yolo\dataset\images\test",
         1,
         100,
+        1
+    )
+
+    run_test(
+        lambda: RLDetector(r"rl\logs\v9d_curriculum0.7_data8000_cont\best_model\best_model.zip"),
+        r"yolo\dataset\images\test",
+        10,
+        2,
         1
     )
 

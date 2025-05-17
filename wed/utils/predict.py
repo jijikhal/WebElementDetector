@@ -52,11 +52,11 @@ class Detector(ABC):
 
 class YoloDetector(Detector):
     """YOLO based detector"""
-    def __init__(self, model_path: str, device: str = "auto") -> None:
+    def __init__(self, model_path: str, device: str | None = None) -> None:
         """
         Args:
             model_path (str): Path to a model file.
-            device (str, optional): On what device the prediction should run. If not specified, chooses best automatically. Example: "gpu0", "cpu". Defaults to "auto".
+            device (str, optional): On what device the prediction should run. If not specified, chooses best automatically. Example: "gpu0", "cpu". Defaults to None.
         """
         super().__init__()
         self.model = YOLO(model_path, verbose=False)
@@ -214,12 +214,12 @@ class RLDetector(Detector):
 
 if __name__ == "__main__":
     cv_detector = CVDetector()
-    yolo_detector = YoloDetector(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\runs\detect\train2\weights\best.pt")
-    rl_detector = RLDetector(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\wed\rl\logs\20250502-200233\best_model\best_model.zip")
+    yolo_detector = YoloDetector(r"runs\detect\8000_dataset\weights\best.pt")
+    rl_detector = RLDetector(r"rl\logs\v9d_curriculum0.7_data8000_cont\best_model\best_model.zip")
 
     images = r"yolo\dataset\images\test"
-    #paths = get_files(images, shuffle=True, seed=0)
-    paths = [r"C:\Users\Jindra\Downloads\gov.jpg", r"C:\Users\Jindra\Downloads\isik.jpg"]*20
+    paths = get_files(images, shuffle=True, seed=5)
+    #paths = [r"C:\Users\Jindra\Downloads\gov.jpg", r"C:\Users\Jindra\Downloads\isik.jpg"]*20
     for i in paths:
         image = cv2.imread(i)
         cv_img, yolo_img, rl_img = [image.copy() for _ in range(3)]
@@ -230,8 +230,8 @@ if __name__ == "__main__":
         result, _ = yolo_detector.predict_timed(image)
         draw_bounding_boxes(yolo_img, result, (0, 0, 255))
 
-        #result, _ = rl_detector.predict_timed(image)
-        #draw_bounding_boxes(rl_img, result, (0, 0, 255))
+        result, _ = rl_detector.predict_timed(image)
+        draw_bounding_boxes(rl_img, result, (0, 0, 255))
 
         cv2.imshow("CV detector", cv_img)
         cv2.imshow("YOLO detector", yolo_img)

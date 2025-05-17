@@ -15,7 +15,6 @@ from stable_baselines3.common.monitor import Monitor
 import torch
 import torch.nn as nn
 from wed.rl.nn.bigger_net_feature_extractor import BiggerNetExtractor
-import wed.rl.envs.square_v5_env_discrete
 import wed.rl.envs.square_v7_env_discrete
 
 
@@ -114,8 +113,7 @@ def sample_ppo_params_rl_zoo(trial: optuna.Trial) -> dict[str, Any]:
     gae_lambda = trial.suggest_categorical("gae_lambda", [0.8, 0.9, 0.92, 0.95, 0.98, 0.99, 1.0])
     max_grad_norm = trial.suggest_categorical("max_grad_norm", [0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 5])
     vf_coef = trial.suggest_float("vf_coef", 0, 1)
-    #net_arch_type = trial.suggest_categorical("net_arch", ["tiny", "small", "medium", "large"])
-    net_arch_type = "tiny"
+    net_arch_type = trial.suggest_categorical("net_arch", ["tiny", "small", "medium", "large"])
     # Uncomment for gSDE (continuous actions)
     # log_std_init = trial.suggest_float("log_std_init", -4, 1)
     # Uncomment for gSDE (continuous action)
@@ -131,7 +129,6 @@ def sample_ppo_params_rl_zoo(trial: optuna.Trial) -> dict[str, Any]:
     if lr_schedule == "linear":
         learning_rate = linear_schedule(learning_rate)
 
-    # TODO: account when using multiple envs
     if batch_size > n_steps:
         batch_size = n_steps
 
@@ -212,7 +209,7 @@ def objective(trial: optuna.Trial) -> float:
     model = PPO(**kwargs)
 
     # Uncomment if you want to start with a pretrained model:
-    # old_model = PPO.load(r"C:\Users\Jindra\Documents\GitHub\WebElementDetector\ReinforcementLearning\logs\20250323-233638\best_model\best_model.zip")
+    # old_model = PPO.load(r"rl\logs\20250323-233638\best_model\best_model.zip")
     # model.policy.load_state_dict(old_model.policy.state_dict())
 
     # Create env used for evaluation.
@@ -254,8 +251,7 @@ if __name__ == "__main__":
 
     study_name = "v8-discrete"  # Unique identifier of the study.
     storage_name = "sqlite:///{}.db".format(study_name)
-    #storage_name = "postgresql://rqa:123456@dev.rqa.app:30433/JindraThesis?sslmode=prefer"
-    #study_name = "v7-discrete-bigger"
+    #storage_name = "postgresql://user:password@ip:port/Database?sslmode=prefer"
 
     study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize", storage=storage_name, load_if_exists=True, study_name=study_name)
     try:

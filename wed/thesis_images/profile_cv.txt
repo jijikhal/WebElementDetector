@@ -1,0 +1,73 @@
+ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      100    8.320    0.083    8.320    0.083 {bilateralFilter}
+  1284150    1.642    0.000    2.794    0.000 bounding_box.py:159(overlap)
+     4197    1.418    0.000    1.418    0.000 {morphologyEx}
+     3897    0.946    0.000    0.946    0.000 {bitwise_and}
+     3897    0.879    0.000    0.882    0.000 numeric.py:67(zeros_like)
+  5281579    0.584    0.000    0.584    0.000 {built-in method builtins.max}
+  4263135    0.547    0.000    0.547    0.000 bounding_box.py:97(get_bb_tl)
+  1284150    0.521    0.000    3.855    0.000 bounding_box.py:169(percentage_inside)
+  1316463    0.374    0.000    0.555    0.000 bounding_box.py:133(area)
+     3897    0.364    0.000    3.562    0.001 detector.py:87(contour_inside)
+63396/28894    0.305    0.000    4.232    0.000 detector.py:23(add_node)
+  2633953    0.269    0.000    0.269    0.000 {built-in method builtins.min}
+      100    0.211    0.002    0.211    0.002 {Canny}
+    29404    0.205    0.000    0.205    0.000 {drawContours}
+      100    0.186    0.002    0.464    0.005 detector.py:98(remove_bridges)
+     3897    0.174    0.000    3.736    0.001 detector.py:150(<lambda>)
+     3897    0.148    0.000    0.148    0.000 {built-in method numpy.core._multiarray_umath.count_nonzero}
+      100    0.137    0.001    0.137    0.001 {findContours}
+   146191    0.077    0.000    0.126    0.000 bounding_box.py:140(is_intersecting)
+     7013    0.062    0.000    0.062    0.000 {minAreaRect}
+56387/600    0.061    0.000    4.081    0.007 detector.py:45(filter_nodes)
+    28994    0.043    0.000    0.070    0.000 bounding_box.py:178(iou)
+     4901    0.040    0.000    0.040    0.000 {convexHull}
+      100    0.037    0.000    0.037    0.000 {cvtColor}
+        1    0.033    0.033   17.889   17.889 <string>:1(<listcomp>)
+    29164    0.031    0.000    0.031    0.000 bounding_box.py:22(__init__)
+      100    0.031    0.000    0.082    0.001 detector.py:70(<listcomp>)
+      100    0.026    0.000    0.026    0.000 {bitwise_or}
+     3249    0.024    0.000    0.150    0.000 detector.py:162(<listcomp>)
+      100    0.023    0.000   17.856    0.179 detector.py:122(find_elements_cv)
+    28663    0.017    0.000    0.042    0.000 detector.py:141(<lambda>)
+      100    0.014    0.000    0.014    0.000 {built-in method builtins.print}
+    28894    0.014    0.000    0.014    0.000 {boundingRect}
+    20499    0.011    0.000    0.015    0.000 bounding_box.py:117(fully_contains)
+    46228    0.011    0.000    0.016    0.000 bounding_box.py:79(abs_height)
+    87372    0.011    0.000    0.011    0.000 {built-in method builtins.round}
+    41144    0.010    0.000    0.016    0.000 bounding_box.py:75(abs_width)
+        1    0.008    0.008   17.897   17.897 <string>:1(<module>)
+     3997    0.008    0.000    0.008    0.000 {getStructuringElement}
+      100    0.008    0.000    4.346    0.043 detector.py:69(make_bb_tree)
+    28994    0.007    0.000    0.007    0.000 detector.py:16(__init__)
+      200    0.006    0.000    0.026    0.000 {method 'sort' of 'list' objects}
+    28894    0.006    0.000    0.017    0.000 detector.py:72(<lambda>)
+    25507    0.005    0.000    0.005    0.000 {method 'remove' of 'list' objects}
+    56387    0.005    0.000    0.005    0.000 {method 'copy' of 'list' objects}
+     4901    0.005    0.000    0.063    0.000 detector.py:149(<lambda>)
+     6985    0.004    0.000    0.010    0.000 detector.py:142(<lambda>)
+    35494    0.003    0.000    0.003    0.000 {method 'append' of 'list' objects}
+     5566    0.003    0.000    0.056    0.000 detector.py:148(<lambda>)
+     4901    0.003    0.000    0.003    0.000 {contourArea}
+     3897    0.003    0.000    0.151    0.000 numeric.py:415(count_nonzero)
+     4901    0.002    0.000    0.006    0.000 bounding_box.py:83(abs_area)
+ 3419/100    0.002    0.000    0.002    0.000 detector.py:58(get_bbs)
+     5779    0.002    0.000    0.004    0.000 detector.py:145(<lambda>)
+     3897    0.002    0.000    0.002    0.000 {built-in method numpy.zeros}
+      300    0.002    0.000    0.002    0.000 {built-in method numpy.array}
+    15485    0.001    0.000    0.001    0.000 {built-in method builtins.abs}
+     3897    0.001    0.000    0.001    0.000 numeric.py:411(_count_nonzero_dispatcher)
+     3419    0.001    0.000    0.003    0.000 detector.py:157(<lambda>)
+      170    0.001    0.000    0.001    0.000 bounding_box.py:269(merge)
+     3897    0.001    0.000    0.001    0.000 numeric.py:63(_zeros_like_dispatcher)
+     3897    0.001    0.000    0.001    0.000 multiarray.py:1080(copyto)
+     3419    0.000    0.000    0.000    0.000 {method 'add' of 'set' objects}
+     3897    0.000    0.000    0.000    0.000 multiarray.py:85(empty_like)
+     1168    0.000    0.000    0.000    0.000 bounding_box.py:137(aspect_ratio)
+      600    0.000    0.000    0.000    0.000 {built-in method time.perf_counter}
+      340    0.000    0.000    0.000    0.000 bounding_box.py:104(get_bb_corners)
+        1    0.000    0.000   17.897   17.897 {built-in method builtins.exec}
+      596    0.000    0.000    0.000    0.000 detector.py:49(<lambda>)
+      100    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+      100    0.000    0.000    0.000    0.000 typing.py:2211(cast)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}

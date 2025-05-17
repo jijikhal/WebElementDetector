@@ -1,9 +1,11 @@
+# Feature extractor mentioned in Subsection 4.17.1
 import torch
 from torchvision import models
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from torch import nn
 import gymnasium as gym
 
+# This was created with assistance from ChatGPT
 class ResNetCombinedExtractor(BaseFeaturesExtractor):
     def __init__(self, observation_space: gym.spaces.Dict, features_dim=1):
         super(ResNetCombinedExtractor, self).__init__(observation_space, features_dim=features_dim)

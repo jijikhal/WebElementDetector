@@ -1,14 +1,7 @@
-# https://docs.ultralytics.com/models/yolov8/#performance-metrics
-
+# This file contains the script for training the YOLOv8 detector used in Section 5.2.
 from ultralytics import YOLO
 
 if __name__ == "__main__":
-
-    # Load a COCO-pretrained YOLOv8n model
     model = YOLO("yolov8n.pt")
-
-    # Display model information (optional)
     model.info()
-
-    # Train the model on the COCO8 example dataset for 100 epochs
     results = model.train(data=r"yolo\dataset\dataset.yaml", epochs=10000, imgsz=640)

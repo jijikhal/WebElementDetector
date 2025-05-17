@@ -1,3 +1,4 @@
+# Feature extractor used in Subsection 4.16.4
 import torch
 import torch.nn as nn
 import gymnasium as gym
