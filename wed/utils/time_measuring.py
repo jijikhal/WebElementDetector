@@ -1,6 +1,6 @@
 # Utility for measuring prediction times, init times and first prediction times
 
-# Used in Section 5.5
+# Used in Section 5.6
 
 from wed.utils.predict import Detector, YoloDetector, CVDetector, RLDetector
 from wed.utils.get_files_in_folder import get_files

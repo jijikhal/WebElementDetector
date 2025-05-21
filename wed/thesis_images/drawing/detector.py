@@ -7,7 +7,7 @@ from time import time
 import numpy as np
 
 from utils.draw_bb import draw_bounding_boxes
-from wed.bounding_box import BoundingBox, BoundingBoxType
+from wed.utils.bounding_box import BoundingBox, BoundingBoxType
 
 
 class Node():

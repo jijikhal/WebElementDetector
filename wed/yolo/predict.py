@@ -2,7 +2,7 @@
 
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
-from wed.bounding_box import BoundingBox, BoundingBoxType
+from wed.utils.bounding_box import BoundingBox, BoundingBoxType
 from wed.utils.draw_bb import draw_bounding_boxes
 import cv2
 from os.path import join, isfile

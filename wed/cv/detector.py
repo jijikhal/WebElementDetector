@@ -10,7 +10,7 @@ from time import time
 import numpy as np
 
 from wed.utils.draw_bb import draw_bounding_boxes
-from wed.bounding_box import BoundingBox, BoundingBoxType
+from utils.bounding_box import BoundingBox, BoundingBoxType
 from wed.utils.get_files_in_folder import get_files
 
 

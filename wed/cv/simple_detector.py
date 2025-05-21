@@ -1,5 +1,5 @@
 # Detector used for the environment with rectangles based on real websites (Section 4.16)
-from wed.bounding_box import BoundingBox, BoundingBoxType, RectI
+from wed.utils.bounding_box import BoundingBox, BoundingBoxType, RectI
 from cv2.typing import MatLike
 import cv2
 

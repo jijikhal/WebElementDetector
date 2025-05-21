@@ -10,4 +10,8 @@ other than training.
 - `predict.py` -- contains implementations of all three detectors (CV, YOLO, RL)
     with a unified API. Ideal for comparing them. Used in Chapter 5.
 - `time_measuring.py` -- contains an utility for measuring the speed of the
-    detectors (used for section 5.5).
+    detectors (used for section 5.6).
+- `bounding_box.py` -- contains definition of the BoundingBox class used by
+    all of the detectors. The class includes many methods for easy manipulation
+    with bounding boxes.
+

@@ -3,6 +3,6 @@ from ultralytics import YOLO
 
 if __name__ == "__main__":
 
-    model = YOLO("runs/detect/8000_dataset/weights/best.pt")
+    model = YOLO(r"yolo\runs\detect\train5\weights\best.pt")
     model.info()
-    model.val()
+    model.val(data=r"yolo\dataset\dataset.yaml")

@@ -1,7 +1,7 @@
 import gymnasium
 from gymnasium import spaces
 from gymnasium.envs.registration import register
-from wed.bounding_box import BoundingBox, RectF, RectI, BoundingBoxType
+from wed.utils.bounding_box import BoundingBox, RectF, RectI, BoundingBoxType
 import numpy as np
 import cv2
 from cv2.typing import MatLike

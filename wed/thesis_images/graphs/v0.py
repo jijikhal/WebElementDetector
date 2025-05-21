@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
 def thousands_formatter(x, pos):
+    if x == 0:
+        return "0"
     if x < 1000:
         return f'{x}'
     if x < 1_000_000:

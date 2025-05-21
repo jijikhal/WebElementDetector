@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from time import perf_counter_ns
 from cv2.typing import MatLike
 import cv2
-from bounding_box import BoundingBox, BoundingBoxType, RectI
+from wed.utils.bounding_box import BoundingBox, BoundingBoxType, RectI
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from utils.get_files_in_folder import get_files

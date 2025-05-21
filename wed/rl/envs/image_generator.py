@@ -1,4 +1,4 @@
-from wed.bounding_box import BoundingBox, BoundingBoxType
+from wed.utils.bounding_box import BoundingBox, BoundingBoxType
 import cv2
 from cv2.typing import MatLike
 from random import uniform, choice, randint, seed

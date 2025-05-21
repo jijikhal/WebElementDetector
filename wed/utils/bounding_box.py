@@ -6,9 +6,15 @@ RectF = tuple[float, float, float, float]
 RectI = tuple[int, int, int, int]
 
 class BoundingBoxType(Enum):
+    
+    """The bounding box is defined as (x_c, y_c, w, h), or the coordinates of the center, width and height. All relative (0-1)."""
     CENTER = 1
+    """The bounding box is defined as (x_tl, y_tl, w, h), or the coordinates of the top-left corner, width and height. All relative (0-1)."""
     TOP_LEFT = 2
+    """The bounding box is defined as (x_tl, y_tl, x_br, y_br), or the coordinates of the top-left corner and bottom-right corner. All relative (0-1)."""
     TWO_CORNERS = 3
+    """The bounding box is specified by the OpenCV Rect type: (x_tl, y_tl, w, h), or the coordinates of the top-left corner, width and height.
+    All absolute (in px) (0-img_w, 0-img_h). When using this type, img_w and img_h MUST be specified to calculate the relative coordinates."""
     OPEN_CV = 4
 
 class BoundingBox:
@@ -20,6 +26,14 @@ class BoundingBox:
     All are in relative coordinates (0-1)
     """
     def __init__(self, bb: RectF | list[float] | Rect, type: BoundingBoxType = BoundingBoxType.CENTER, img_w: int = -1, img_h: int = -1) -> None:
+        """Initializes a bounding box.
+
+        Args:
+            bb (RectF | list[float] | Rect): Four numbers defining the bounding box. Their meaning depends on the chosen type.
+            type (BoundingBoxType, optional): Defines the meaning of the four provided numbers. See the `BoundingBoxType` for more information. Defaults to BoundingBoxType.CENTER.
+            img_w (int, optional): Absolute width in pixels of the image in which the bounding box is located. When specified, it does not need to be specified for some of the methods. Defaults to -1.
+            img_h (int, optional): Absolute height in pixels of the image in which the bounding box is located. When specified, it does not need to be specified for some of the methods. Defaults to -1.
+        """
         self.x: float
         self.y: float
         self.w: float
@@ -27,7 +41,7 @@ class BoundingBox:
 
         self.img_w: int = img_w
         self.img_h: int = img_h
-        self.is_absolute: bool = False
+        self.is_absolute: bool = img_w > 0 and img_h > 0
 
         if type == BoundingBoxType.CENTER:
             x, y, w, h = bb
@@ -56,8 +70,7 @@ class BoundingBox:
             self.w = abs(x1-x2)
             self.h = abs(y1-y2)
         elif type == BoundingBoxType.OPEN_CV:
-            assert img_h > 0 and img_w > 0, "For OpenCv type the image size must be specified"
-            self.is_absolute = True
+            assert img_h > 0 and img_w > 0, "For OpenCV type the image size must be specified"
             x_abs, y_abs, w_abs, h_abs = bb
             x = x_abs/img_w
             y = y_abs/img_h
@@ -73,14 +86,29 @@ class BoundingBox:
             self.h = h
 
     def abs_width(self) -> int:
+        """Returns the width in pixels. Only available when img_w and img_h were specified.
+
+        Returns:
+            int: The width of the bounding box in pixels.
+        """
         assert self.is_absolute, "absolute width is only available for absolut defined bounding boxes"
         return round(self.w*self.img_w)
 
     def abs_height(self) -> int:
+        """Returns the height in pixels. Only available when img_w and img_h were specified.
+
+        Returns:
+            int: The height of the bounding box in pixels.
+        """
         assert self.is_absolute, "absolute height is only available for absolut defined bounding boxes"
         return round(self.h*self.img_h)
     
     def abs_area(self) -> int:
+        """Returns the area of the bounding box in px^2. Only available when img_w and img_h were specified.
+
+        Returns:
+            int: The area of the bounding box in pixels^2.
+        """
         return self.abs_height()*self.abs_width()
 
 
@@ -102,11 +130,21 @@ class BoundingBox:
         return (self.x, self.y, self.w, self.h)
     
     def get_bb_corners(self) -> RectF:
+        """
+        Returns a bounding box in the following format:
+        (X of top-left, Y of top-left, X of bottom-right, Y of bottom-right)
+        """
         return (self.x, self.y, self.x+self.w, self.y+self.h)
     
     def get_rect(self, img_width: int = -1, img_height: int = -1) -> RectI:
-        """
-        Returns a bounding box in absolute coordinates int the TL format.
+        """Returns a bounding box in absolute coordinates in the Top-Left format. The output is compatible with OpenCV's Rect type.
+
+        Args:
+            img_width (int, optional): Width of the image. Does not need to be specified if it was specified during creation. Defaults to -1.
+            img_height (int, optional): Height of the image. Does not need to be specified if it was specified during creation.. Defaults to -1.
+
+        Returns:
+            RectI: The bounding box defined in absolute coordinates (x_tl, y_tl, w, h).
         """
         assert self.is_absolute or (img_height > 0 and img_width > 0), "For non-OpenCV bounding boxes, img size must be specified"
         if (self.is_absolute and (img_height < 0 or img_width < 0)):
@@ -115,8 +153,14 @@ class BoundingBox:
         return (round(self.x*img_width), round(self.y*img_height), round(self.w*img_width), round(self.h*img_height))
 
     def fully_contains(self, other: 'BoundingBox') -> bool:
-        """
-        Returns whether `other` bounding box is completaly within this bounding box.
+        """Returns whether `other` bounding box is completaly within this bounding box.
+        If the two bounding boxes are the same (with some small tolerance), returns False.
+
+        Args:
+            other (BoundingBox): bounding box to be checked if it is within thos one
+
+        Returns:
+            bool: True if `other` is fully inside `self`.
         """
 
         if self is other:
@@ -131,10 +175,20 @@ class BoundingBox:
         return x1 <= x2 and y1 <= y2 and x1+w1 >= x2+w2 and y1+h1 >= y2+h2
     
     def area(self) -> float:
+        """Returns the relative area of the bounding box (in %^2).
+
+        Returns:
+            float: The relative area of the bounding box (0-1)
+        """
         _, _, w, h = self.get_bb_tl()
         return w*h
     
     def aspect_ratio(self) -> float:
+        """Returns the aspect ratio of the bounding box: width / height
+
+        Returns:
+            float: The aspect ratio.
+        """
         return self.w/self.h
     
     def is_intersecting(self, other: 'BoundingBox') -> bool:
@@ -158,7 +212,7 @@ class BoundingBox:
     
     def overlap(self, other: 'BoundingBox') -> float:
         """
-        Returns the area of an overlap of two bounding boxes
+        Returns the realtive area of an overlap of two bounding boxes
         """
         x1, y1, w1, h1 = self.get_bb_tl()
         x2, y2, w2, h2 = other.get_bb_tl()
@@ -202,6 +256,16 @@ class BoundingBox:
             return x-tolerance/2, y+tolerance/2
 
     def tolerant_iou(self, other: 'BoundingBox', tolerance: float = 0.01, weight_of_modified: float = 0.75) -> float:
+        """Calculates the TIoU metric described in Subsection 4.16.4
+
+        Args:
+            other (BoundingBox): The bounding box to compare to
+            tolerance (float, optional): The allowed tolerance. Defaults to 0.01.
+            weight_of_modified (float, optional): The weight of the TIoU in the total calculation. 1 = only TIoU, 0 = IoU. Defaults to 0.75.
+
+        Returns:
+            float: The TIoU score
+        """
         assert 0 <= tolerance <= 1, "Tolerance must be 0-1"
         assert 0 <= weight_of_modified <= 1, "Tolerance must be 0-1"
 
@@ -226,8 +290,15 @@ class BoundingBox:
         return 1 / (1 + exp(-x))
     
     def ASS(self, other: 'BoundingBox', sharpness: float = 2.8, shift: float = 0.5) -> float:
-        """
-        Computes the Absolute Sigmoid Score
+        """Computes the Absolute Sigmoid Score descibed in Subsection 4.16.5
+
+        Args:
+            other (BoundingBox): The bounding box to compare to
+            sharpness (float, optional): Sharpness of the sigmoid (alpha). Defaults to 2.8.
+            shift (float, optional): The x-axis shift of the sigmoid (theta). Defaults to 0.5.
+
+        Returns:
+            float: The ASS score
         """
         x1, y1, x2, y2 = self.get_bb_corners()
         x3, y3, x4, y4 = other.get_bb_corners()
@@ -243,6 +314,14 @@ class BoundingBox:
 
 
     def get_distance(self, other: 'BoundingBox') -> float:
+        """Calculates the smallest distance between two bounding boxes (0 if they have any overlap)
+
+        Args:
+            other (BoundingBox): The other bounding box
+
+        Returns:
+            float: The distance
+        """
         x1, y1, x2, y2 = self.get_bb_corners()
         x3, y3, x4, y4 = other.get_bb_corners()
 
@@ -267,6 +346,14 @@ class BoundingBox:
         return distance
     
     def merge(self, other: 'BoundingBox') -> 'BoundingBox':
+        """Merges two bounding boxes, essentially creating their union.
+
+        Args:
+            other (BoundingBox): The other bounding box
+
+        Returns:
+            BoundingBox: The new bounding box
+        """
         x1, y1, x2, y2 = self.get_bb_corners()
         x3, y3, x4, y4 = other.get_bb_corners()
 
