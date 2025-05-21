@@ -2,9 +2,10 @@
 
 import gymnasium as gym
 import wed.rl.envs.square_v9_env_discrete
-from envs.square_v9_env_discrete import Action, ObservationType
+from envs.common import Action, ObservationType
 import cv2
 
+# The selected env must be imported!
 ENV = 'square-v9-discrete'
 
 ARROW_LEFT = 2424832
@@ -17,6 +18,7 @@ KEY_S = 115
 KEY_D = 100
 SPACE = 32
 ESC = 27
+KEY_Q = 113
 
 ACTION_MAPPING = {
     ARROW_LEFT: Action.SHRINK_LEFT,
@@ -30,8 +32,9 @@ ACTION_MAPPING = {
     SPACE: Action.STOP
 }
 
+
 def main():
-    env = gym.make(ENV, width=150, height=150, render_mode='rgb_array_list', start_rects = 1000, state_type=ObservationType.STATE_IMAGE_AND_VIEW, padding=0.00)
+    env = gym.make(ENV, width=150, height=150, render_mode='rgb_array_list', start_rects=1000, state_type=ObservationType.STATE_IMAGE_AND_VIEW, padding=0.05)
     while True:  # Episode loop
         print("New episode started")
         obs, info = env.reset()
@@ -45,7 +48,7 @@ def main():
                 cv2.imshow("Observation", obs[0])
             cv2.imshow("Current selection", whole_render)
             key_pressed = cv2.waitKeyEx(0)
-            if (key_pressed == ESC):
+            if (key_pressed == ESC or key_pressed == KEY_Q):
                 return
             if (key_pressed not in ACTION_MAPPING):
                 print("Uknown key pressed")
@@ -54,5 +57,5 @@ def main():
             obs, reward, terminated, stopped, info = env.step(action)
             print(f"Reward: {reward}")
 
-main()
 
+main()

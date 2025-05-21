@@ -1,3 +1,4 @@
+# This file contains the environment used in Section 4.10 containing multiple randomly placed shapes, only outlines, bigger images
 import random
 import gymnasium
 from gymnasium import spaces
@@ -20,6 +21,7 @@ register(
     entry_point='wed.rl.envs.square_v6_env:SquareEnv'
 )
 
+
 def draw_triangle(bb: RectI, image: MatLike) -> None:
     x, y, w, h = bb
     side = np.random.randint(0, 4)
@@ -33,16 +35,20 @@ def draw_triangle(bb: RectI, image: MatLike) -> None:
         points = np.array([(x, y+h//2), (x+w-1, y+h-1), (x+w-1, y)])
     cv2.drawContours(image, [points], 0, (255,), 1)
 
+
 def draw_rect(bb: RectI, image: MatLike) -> None:
     x, y, w, h = bb
     cv2.rectangle(image, (x, y), (x+w-1, y+h-1), (255,), 1)
+
 
 def draw_ellipse(bb: RectI, image: MatLike) -> None:
     x, y, w, h = bb
     cv2.ellipse(image, (x+w//2, y+h//2), (w//2-1, h//2-1), 0, 0, 360, (255,), 1)
 
+
 class SquareEnv(gymnasium.Env):
-    metadata = {'render_modes': ['human'], 'render_fps':1} 
+    metadata = {'render_modes': ['human'], 'render_fps': 1}
+
     def __init__(self, height: int = 100, width: int = 100, render_mode=None, reward_func=DONT_PUNISH_OTHER) -> None:
         super().__init__()
         self.height: int = height
@@ -57,7 +63,7 @@ class SquareEnv(gymnasium.Env):
 
         self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
 
-    def reset(self, seed = None, options = None):
+    def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         random.seed(seed)
         np.random.seed(seed)
@@ -81,7 +87,7 @@ class SquareEnv(gymnasium.Env):
                     draw_triangle(bb, self.img)
 
         self.steps = len(self.bb)
-        
+
         # Convert to channel-first format. See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
         self.img = np.expand_dims(self.img, axis=0)
 
@@ -92,7 +98,7 @@ class SquareEnv(gymnasium.Env):
             self.render()
 
         return obs, info
-    
+
     def calculate_reward(self, rect: RectF) -> tuple[float, bool]:
 
         bb = BoundingBox(rect, BoundingBoxType.CENTER)
@@ -107,11 +113,11 @@ class SquareEnv(gymnasium.Env):
 
             for i in intersecting:
                 x, y, w, h = i.get_rect(self.width, self.height)
-                self.img[0] [y:y+h, x:x+w] = 0
+                self.img[0][y:y+h, x:x+w] = 0
                 self.bb.remove(i)
 
             return total_reward, len(self.bb) == 0
-        
+
         elif self.reward_func == PUNISH_OVERLAP:
             if (len(intersecting) == 0):
                 return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
@@ -129,7 +135,7 @@ class SquareEnv(gymnasium.Env):
                 self.bb.remove(i)
 
             return total_reward, len(self.bb) == 0
-        
+
         elif self.reward_func == PUNISH_IOU:
             if (len(intersecting) == 0):
                 return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
@@ -145,7 +151,7 @@ class SquareEnv(gymnasium.Env):
                 self.bb.remove(i)
 
             return total_reward, len(self.bb) == 0
-        
+
         raise ValueError("Unknown reward func")
 
     def step(self, action):
@@ -163,41 +169,37 @@ class SquareEnv(gymnasium.Env):
         info = {}
 
         if (self.render_mode == 'human'):
-            #print("boxes:", len(self.bb))
+            # print("boxes:", len(self.bb))
             self.render()
 
         self.img[0][y:y+h, x:x+w] = 0
 
         return obs, reward, terminated, stoped, info
-    
+
     def render(self):
-        #return self.img[0]
+        # return self.img[0]
         cv2.imshow("square-v6 render", self.img[0])
-        cv2.waitKey(0)
+        cv2.waitKey(1)
+
+    def close(self):
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
-    env = gymnasium.make('square-v6', render_mode='none', width=200, height=200, reward_func=PUNISH_IOU)
-    # env = RescaleAction(env, -1, 1)
+    env = gymnasium.make('square-v6', render_mode='human', width=200, height=200, reward_func=PUNISH_IOU)
+    env = RescaleAction(env, -1, 1)
 
     print("check begin")
-    #check_env(env)
+    check_env(env)
     print("check end")
 
-    total = 0
-    for _ in range(10000):
-        env.reset()
-        #print(env.env.env.__dict__)
-        total += env.env.env.steps
-
-    print(total/10000)
-
-    """obs = env.reset()[0]
-
     for i in range(10):
-        rand_action = env.action_space.sample()
-        print(rand_action)
-        obs, reward, terminated, _, _ = env.step(rand_action)
-        print(reward, terminated)
-        if (terminated):
-            break"""
+        terminated, truncated = False, False
+        obs = env.reset()[0]
+        while (not terminated and not truncated):
+            rand_action = env.action_space.sample()
+            obs, reward, terminated, truncated, _ = env.step(rand_action)
+            print(reward, terminated, rand_action)
+            if cv2.waitKey(0) == ord('q'):
+                env.close()
+                exit(0)

@@ -1,3 +1,4 @@
+# This file contains the environment used in Section 4.11 containing hierarchicaly placed rectangles
 import random
 import gymnasium
 from gymnasium import spaces
@@ -15,12 +16,15 @@ register(
     entry_point='wed.rl.envs.square_v7_env:SquareEnv'
 )
 
+
 def draw_rect(bb: RectI, image: MatLike) -> None:
     x, y, w, h = bb
     cv2.rectangle(image, (x, y), (x+w-1, y+h-1), (255,), 1)
 
+
 class SquareEnv(gymnasium.Env):
-    metadata = {'render_modes': ['human'], 'render_fps':1} 
+    metadata = {'render_modes': ['human'], 'render_fps': 1}
+
     def __init__(self, height: int = 100, width: int = 100, render_mode=None) -> None:
         super().__init__()
         self.height: int = height
@@ -34,14 +38,14 @@ class SquareEnv(gymnasium.Env):
 
         self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
 
-    def reset(self, seed = None, options = None):
+    def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         random.seed(seed)
         np.random.seed(seed)
         self.img, self.bb = generete_hierarchy((self.height, self.width), seed)
 
         self.steps = len(self.bb)
-        
+
         # Convert to channel-first format. See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
         self.img = np.expand_dims(self.img, axis=0)
 
@@ -52,7 +56,7 @@ class SquareEnv(gymnasium.Env):
             self.render()
 
         return obs, info
-    
+
     def calculate_reward(self, rect: RectF) -> tuple[float, bool]:
 
         guess = BoundingBox(rect, BoundingBoxType.CENTER)
@@ -65,24 +69,24 @@ class SquareEnv(gymnasium.Env):
             intersecting = [x for x in self.bb if x.bb.fully_contains(guess)]
             intersecting.sort(key=lambda x: x.level, reverse=True)
             intersecting = [intersecting[0]]
-        
+
         if (len(intersecting) == 1):
             hit = intersecting[0]
 
-            ## Modification to only reward inner boxes
+            # Modification to only reward inner boxes
             if hit.level < 2:
                 still_valid = list(filter(lambda x: x.level >= 2, self.bb))
                 if len(still_valid) > 0:
                     return -len(still_valid), True
                 return 0, True
-            ## END
+            # END
 
             total_reward = hit.bb.iou(guess)
             remaining_children_area = 0
             for c in hit.children:
                 remaining_children_area += c.bb.area()
             total_reward -= remaining_children_area / hit.bb.area()
-            
+
             hit.remove(self.img[0], self.bb)
             end = len(self.bb) == 0
 
@@ -90,13 +94,13 @@ class SquareEnv(gymnasium.Env):
             intersecting.sort(key=lambda x: x.level, reverse=True)
             lowest_child = intersecting[0]
 
-            ## Modification to only reward inner boxes
+            # Modification to only reward inner boxes
             if lowest_child.level < 2:
                 still_valid = list(filter(lambda x: x.level >= 2, self.bb))
                 if len(still_valid) > 0:
                     return -len(still_valid), True
                 return 0, True
-            ## END
+            # END
 
             best_score = lowest_child.bb.iou(guess)
             other_overlap = sum([x.bb.overlap(guess) for x in intersecting[1:]])
@@ -125,14 +129,16 @@ class SquareEnv(gymnasium.Env):
             print(x, y, w, h, reward)
             cv2.imshow("prediction", img_copy)
             cv2.waitKey(0)
-            #self.render()
+            # self.render()
 
         return obs, reward, terminated, stoped, info
-    
+
     def render(self):
-        return self.img[0]
-        cv2.imshow("square-v6 render", self.img[0])
-        cv2.waitKey(0)
+        cv2.imshow("square-v7 render", self.img[0])
+        cv2.waitKey(1)
+
+    def close(self):
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
@@ -143,20 +149,13 @@ if __name__ == "__main__":
     check_env(env)
     print("check end")
 
-    """total = 0
-    for _ in range(10000):
-        env.reset()
-        #print(env.env.env.__dict__)
-        total += env.env.env.steps
-
-    print(total/10000)"""
-
-    """obs = env.reset()[0]
-
     for i in range(10):
-        rand_action = env.action_space.sample()
-        print(rand_action)
-        obs, reward, terminated, _, _ = env.step(rand_action)
-        print(reward, terminated)
-        if (terminated):
-            break"""
+        terminated, truncated = False, False
+        obs = env.reset()[0]
+        while (not terminated and not truncated):
+            rand_action = env.action_space.sample()
+            obs, reward, terminated, truncated, _ = env.step(rand_action)
+            print(reward, terminated, rand_action)
+            if cv2.waitKey(0) == ord('q'):
+                env.close()
+                exit(0)

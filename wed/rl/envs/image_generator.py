@@ -1,14 +1,16 @@
+# This file contains a state generator used in Section 4.11 and 4.15.
 from wed.utils.bounding_box import BoundingBox, BoundingBoxType
 import cv2
 from cv2.typing import MatLike
 from random import uniform, choice, randint, seed
 import numpy as np
 
-MIN_SIZE = 0.02 # minimal size of object
-MIN_SPACING = 0.03 # minimal distance between two objects
-MAX_SIBILINGS = 4 # max amount of children
-MAX_DEPTH = 4 # max depth
-MAX_EDGE = 0.2 # max space from parent to child
+MIN_SIZE = 0.02  # minimal size of object
+MIN_SPACING = 0.03  # minimal distance between two objects
+MAX_SIBILINGS = 4  # max amount of children
+MAX_DEPTH = 4  # max depth
+MAX_EDGE = 0.2  # max space from parent to child
+
 
 class Node:
     def __init__(self, bb: BoundingBox, level: int, parent: 'Node | None') -> None:
@@ -53,7 +55,7 @@ class Node:
         max_allowed_children = min(int(cw/(MIN_SIZE+spacing) if horizontal else ch/(MIN_SIZE+spacing)), MAX_SIBILINGS)
         if (max_allowed_children == 0):
             return
-        
+
         child_count = randint(1 if self.level == 0 else 0, max_allowed_children)
         if (child_count == 0):
             return
@@ -80,25 +82,21 @@ class Node:
         for i in self.children:
             i.remove(img, hierarchy, False)
 
-def generete_hierarchy(size: tuple[int, int], seed_set = None) -> tuple[MatLike, list[Node]]:
+
+def generete_hierarchy(size: tuple[int, int], seed_set=None) -> tuple[MatLike, list[Node]]:
     seed(seed_set)
-    root = Node(BoundingBox((0,0,1,1), BoundingBoxType.TOP_LEFT), 0, None)
+    root = Node(BoundingBox((0, 0, 1, 1), BoundingBoxType.TOP_LEFT), 0, None)
     img = np.zeros(size, dtype=np.uint8)
     hierarchy: list[Node] = []
     root.create_children(hierarchy)
     root.draw_self(img)
     return img, hierarchy
 
-if __name__ == "__main__":
-    total = 0
-    for _ in range(10000):
-        img, h = generete_hierarchy((100, 100), None)
-        total += len(h)
-    print(total/10000)
 
-    """while True:
+if __name__ == "__main__":
+    while True:
         img, _ = generete_hierarchy((100, 100), None)
         cv2.imshow("hierarchy", img)
         if cv2.waitKey(0) & 0xFF == 27:
             break
-    cv2.destroyAllWindows()"""
+    cv2.destroyAllWindows()

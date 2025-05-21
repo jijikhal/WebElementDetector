@@ -1,3 +1,4 @@
+# This file contains the environment used in Section 4.14 containing multiple randomly placed rectangles with discrete actions
 import gymnasium
 from gymnasium import spaces
 from gymnasium.envs.registration import register
@@ -5,28 +6,19 @@ from wed.utils.bounding_box import BoundingBox, RectF, RectI, BoundingBoxType
 import numpy as np
 import cv2
 from cv2.typing import MatLike
-import math
 from random import uniform
 from stable_baselines3.common.env_checker import check_env
-from gymnasium.wrappers import RescaleAction
+from wed.rl.envs.common import Action
 
 register(
     id='square-v3-discrete',
     entry_point='wed.rl.envs.square_v3_env_discrete:SquareEnv'
 )
 
-SHRINK_LEFT = 0
-SHRINK_RIGHT = 1
-SHRINK_TOP = 2
-SHRINK_BOTTOM = 3
-SHRINK_LEFT_SMALL = 4
-SHRINK_RIGHT_SMALL = 5
-SHRINK_TOP_SMALL = 6
-SHRINK_BOTTOM_SMALL = 7
-STOP = 8
 
 class SquareEnv(gymnasium.Env):
-    metadata = {'render_modes': ['human'], 'render_fps':1} 
+    metadata = {'render_modes': ['human'], 'render_fps': 1}
+
     def __init__(self, height: int = 100, width: int = 100, render_mode=None) -> None:
         super().__init__()
         self.height: int = height
@@ -41,7 +33,7 @@ class SquareEnv(gymnasium.Env):
 
         self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
 
-    def reset(self, seed = None, options = None):
+    def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         self.bb = []
         self.img = np.zeros((self.height, self.width), np.uint8)
@@ -57,7 +49,7 @@ class SquareEnv(gymnasium.Env):
 
         self.steps = len(self.bb)*30
         self.view = [0, 0, 1, 1]
-        
+
         # Convert to channel-first format. See: https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
         self.img = np.expand_dims(self.img, axis=0)
 
@@ -68,7 +60,7 @@ class SquareEnv(gymnasium.Env):
             self.render()
 
         return obs, info
-    
+
     def calculate_reward(self, rect: RectF) -> tuple[float, bool]:
 
         bb = BoundingBox(rect, BoundingBoxType.CENTER)
@@ -76,7 +68,7 @@ class SquareEnv(gymnasium.Env):
         intersecting = [x for x in self.bb if x.has_overlap(bb)]
 
         if (len(intersecting) == 0):
-                return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
+            return -min([x.get_distance(bb) for x in self.bb]), len(self.bb) == 0
         elif (len(intersecting) == 1):
             total_reward = intersecting[0].iou(bb)
         else:
@@ -92,25 +84,25 @@ class SquareEnv(gymnasium.Env):
 
         return total_reward, len(self.bb) == 0
 
-    def step(self, action):
+    def step(self, action: Action):
         self.steps -= 1
         width = self.view[2]-self.view[0]
         heigth = self.view[3]-self.view[1]
-        if action == SHRINK_LEFT:
+        if action == Action.SHRINK_LEFT:
             self.view[0] = self.view[0] + width*0.15
-        elif action == SHRINK_TOP:
+        elif action == Action.SHRINK_TOP:
             self.view[1] = self.view[1] + heigth*0.15
-        elif action == SHRINK_RIGHT:
+        elif action == Action.SHRINK_RIGHT:
             self.view[2] = self.view[2] - width*0.15
-        elif action == SHRINK_BOTTOM:
+        elif action == Action.SHRINK_BOTTOM:
             self.view[3] = self.view[3] - heigth*0.15
-        elif action == SHRINK_LEFT_SMALL:
+        elif action == Action.SHRINK_LEFT_SMALL:
             self.view[0] = self.view[0] + width*0.025
-        elif action == SHRINK_TOP_SMALL:
+        elif action == Action.SHRINK_TOP_SMALL:
             self.view[1] = self.view[1] + heigth*0.025
-        elif action == SHRINK_RIGHT_SMALL:
+        elif action == Action.SHRINK_RIGHT_SMALL:
             self.view[2] = self.view[2] - width*0.025
-        elif action == SHRINK_BOTTOM_SMALL:
+        elif action == Action.SHRINK_BOTTOM_SMALL:
             self.view[3] = self.view[3] - heigth*0.025
 
         # Calculate area so that it is always at least 1x1 pixels in a valid spot
@@ -124,19 +116,19 @@ class SquareEnv(gymnasium.Env):
             elif (x1 == 0):
                 x2 += 2
             else:
-                x2 +=2
+                x2 += 2
         if (y1 == y2):
             if (y2 == self.height):
                 y1 -= 2
             elif (y1 == 0):
                 y2 += 2
             else:
-                y2 +=2
+                y2 += 2
 
         view = self.img[0][y1:y2, x1:x2]
         obs = np.expand_dims(cv2.resize(view, (self.width, self.height), interpolation=cv2.INTER_NEAREST), axis=0)
 
-        if action == STOP:
+        if action == Action.STOP:
             bb = BoundingBox(self.view, BoundingBoxType.TWO_CORNERS)
             reward, terminated = self.calculate_reward(bb.get_bb_middle())
             self.view = [0, 0, 1, 1]
@@ -146,7 +138,7 @@ class SquareEnv(gymnasium.Env):
             self.render()
 
         return obs, 0, False, self.steps <= 0, {}
-    
+
     def render(self):
         x1 = int(self.view[0]*self.width)
         y1 = int(self.view[1]*self.height)
@@ -159,7 +151,7 @@ class SquareEnv(gymnasium.Env):
             elif (x1 == 0):
                 x2 += 2
             else:
-                x2 +=2
+                x2 += 2
 
         if (y1 == y2):
             if (y2 == self.height):
@@ -167,26 +159,31 @@ class SquareEnv(gymnasium.Env):
             elif (y1 == 0):
                 y2 += 2
             else:
-                y2 +=2
+                y2 += 2
         view = self.img[0][y1:y2, x1:x2]
         show = cv2.resize(view, (500, 500), interpolation=cv2.INTER_NEAREST)
         cv2.imshow("square-v3 render", show)
-        cv2.waitKey(0)
+        cv2.waitKey(1)
+
+    def close(self):
+        if self.render_mode == 'human':
+            cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
     env = gymnasium.make('square-v3-discrete', render_mode='human')
 
     print("check begin")
-    #check_env(env)
+    check_env(env)
     print("check end")
 
-    obs = env.reset()[0]
-
-    for i in range(100):
-        rand_action = env.action_space.sample()
-        print(rand_action)
-        obs, reward, terminated, _, _ = env.step(rand_action)
-        print(reward, terminated)
-        if (terminated):
-            break
+    for i in range(10):
+        terminated, truncated = False, False
+        obs = env.reset()[0]
+        while (not terminated and not truncated):
+            rand_action = env.action_space.sample()
+            obs, reward, terminated, truncated, _ = env.step(rand_action)
+            print(reward, terminated, rand_action)
+            if cv2.waitKey(0) == ord('q'):
+                env.close()
+                exit(0)

@@ -3,6 +3,7 @@ from wed.utils.bounding_box import BoundingBox, BoundingBoxType, RectI
 from cv2.typing import MatLike
 import cv2
 
+
 def draw_rect(bb: RectI, image: MatLike) -> None:
     """Draws a rectangle in the image
 
@@ -12,6 +13,7 @@ def draw_rect(bb: RectI, image: MatLike) -> None:
     """
     x, y, w, h = bb
     cv2.rectangle(image, (x, y), (x+w-1, y+h-1), (255,), 1)
+
 
 def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
     """Finds elements in an website screenshot image. Does not work that well.
@@ -34,7 +36,7 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
 
     for i in range(1, big_count):
         x, y, w, h, area = big_stats[i]
-        if (min(w,h) < 10 or max(w, h) < 20):
+        if (min(w, h) < 10 or max(w, h) < 20):
             cv2.rectangle(copy_for_show, (x, y), (x + w + 1, y + h + 1), (0, 0, 255), 1)
             continue
         result.append(BoundingBox((x/img_w, y/img_h, (w+1)/img_w, (h+1)/img_h), BoundingBoxType.TOP_LEFT))
@@ -60,7 +62,4 @@ def find_bounding_boxes(img: MatLike) -> list[BoundingBox]:
 
     merged.sort(key=lambda x: x.area(), reverse=True)
 
-    #cv2.imshow("img", copy_for_show)
-    #cv2.waitKey(0)
-    
     return merged

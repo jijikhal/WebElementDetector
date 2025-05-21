@@ -19,6 +19,7 @@ from typing import cast
 from wed.rl.envs.common import Action
 from wed.utils.draw_bb import draw_bounding_boxes
 
+
 class Detector(ABC):
     """Class providing a unified API for detectors"""
     @abstractmethod
@@ -50,8 +51,10 @@ class Detector(ABC):
             print(f"Prediction from {self.__class__.__name__} of {len(result)} boxes took {((end-start)/1e6):.2f} ms.")
         return result, end-start
 
+
 class YoloDetector(Detector):
     """YOLO based detector"""
+
     def __init__(self, model_path: str, device: str | None = None) -> None:
         """
         Args:
@@ -67,7 +70,8 @@ class YoloDetector(Detector):
         if (len(result) < 0 or results[0].boxes is None):
             return []
         return [BoundingBox(b.tolist(), BoundingBoxType.CENTER) for b in results[0].boxes.xywhn]
-    
+
+
 class CVDetector(Detector):
     def __init__(self) -> None:
         super().__init__()
@@ -75,6 +79,7 @@ class CVDetector(Detector):
     def predict(self, img: MatLike) -> list[BoundingBox]:
         bbs, _ = find_elements_cv(img, True)
         return bbs
+
 
 class RLDetector(Detector):
     def __init__(self, model_path: str, device: str = "auto") -> None:
@@ -93,16 +98,16 @@ class RLDetector(Detector):
     def _scaling(self, img: MatLike, width, height):
         """Scales image to corret size using correct interpolation methods"""
         h, w = img.shape[:2]
-        if width > w: # Upscale
+        if width > w:  # Upscale
             interp_x = cv2.INTER_NEAREST
-        else: # Downscale
+        else:  # Downscale
             interp_x = cv2.INTER_AREA
 
         img_x_scaled = cast(NDArray[np.uint8], cv2.resize(img, (width, h), interpolation=interp_x))
 
-        if height > h: # Upscale
+        if height > h:  # Upscale
             interp_y = cv2.INTER_NEAREST
-        else: # Downscale
+        else:  # Downscale
             interp_y = cv2.INTER_AREA
 
         img_final = cast(NDArray[np.uint8], cv2.resize(img_x_scaled, (width, height), interpolation=interp_y))
@@ -123,14 +128,14 @@ class RLDetector(Detector):
             elif (x1 == 0):
                 x2 += 2
             else:
-                x2 +=2
+                x2 += 2
         if (y1 == y2):
             if (y2 == img_h):
                 y1 -= 2
             elif (y1 == 0):
                 y2 += 2
             else:
-                y2 +=2
+                y2 += 2
 
         return x1, x2, y1, y2
 
@@ -142,9 +147,9 @@ class RLDetector(Detector):
         view_scaled = self._scaling(view_cutout, self.width, self.height)
 
         img = np.expand_dims(view_scaled, axis=0)
-        
-        return {"image":img, "view": np.array(self.view, dtype=np.float32)}
-    
+
+        return {"image": img, "view": np.array(self.view, dtype=np.float32)}
+
     def _step(self, action: Action) -> tuple[bool, BoundingBox | None]:
         """Performs one step of the env based on the provided action"""
         width = self.view[2]-self.view[0]
@@ -190,7 +195,7 @@ class RLDetector(Detector):
         predictions: list[BoundingBox] = []
         box_steps = 0
 
-        model_state = None # Only used for recurrent policies (not used in the thesis)
+        model_state = None  # Only used for recurrent policies (not used in the thesis)
         while not terminated and steps < 10000:
             obs = self._get_observation()
             action, model_state = self.model.predict(obs, model_state, deterministic=True)
@@ -212,6 +217,7 @@ class RLDetector(Detector):
 
         return predictions
 
+
 if __name__ == "__main__":
     cv_detector = CVDetector()
     yolo_detector = YoloDetector(r"runs\detect\8000_dataset\weights\best.pt")
@@ -219,7 +225,6 @@ if __name__ == "__main__":
 
     images = r"yolo\dataset\images\test"
     paths = get_files(images, shuffle=True, seed=5)
-    #paths = [r"C:\Users\Jindra\Downloads\gov.jpg", r"C:\Users\Jindra\Downloads\isik.jpg"]*20
     for i in paths:
         image = cv2.imread(i)
         cv_img, yolo_img, rl_img = [image.copy() for _ in range(3)]

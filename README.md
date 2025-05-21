@@ -1,10 +1,10 @@
 # WebElementDetector
 
-This repository contains the source code used in my bachelor's thesis. That experimented with the use of deep reinforcement learning for grephical user interface element detection.
+This repository contains the source code used in my bachelor's thesis. It experimented with the use of deep reinforcement learning for grephical user interface element detection.
 
 ## Structure
 
-All the source code is located in the `wed` directory. It contains four more important folders:
+All the source code is located in the `wed` directory. It contains the following directories:
 
 - `cv` -- contains all source code of the two detectors based on traditional computer vision algorithms
 - `rl` -- contains all the RL environments and scripts for training and testing the RL agents

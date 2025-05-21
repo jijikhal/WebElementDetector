@@ -6,17 +6,19 @@ from torch import nn
 import gymnasium as gym
 
 # This was created with assistance from ChatGPT
+
+
 class ResNetCombinedExtractor(BaseFeaturesExtractor):
     def __init__(self, observation_space: gym.spaces.Dict, features_dim=1):
         super(ResNetCombinedExtractor, self).__init__(observation_space, features_dim=features_dim)
         # Load pretrained ResNet
         resnet = models.resnet18(pretrained=True)
         self.resnet = nn.Sequential(nn.Conv2d(1, 3, kernel_size=1), *list(resnet.children())[:-1], nn.Flatten())
-        
+
         with torch.no_grad():
             dummy_input = torch.zeros(1, *observation_space["image"].shape)
             resnet_output_dim = self.resnet(dummy_input).shape[1]
-        
+
         view_dim = observation_space["view"].shape[0]
         self._features_dim = resnet_output_dim+view_dim
 

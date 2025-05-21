@@ -17,6 +17,7 @@ from wed.utils.get_files_in_folder import get_files
 class Node():
     """Class for the reprezentation of a hierarchy of elements.
     """
+
     def __init__(self, bb: BoundingBox, contour: MatLike) -> None:
         """
         Args:
@@ -216,7 +217,8 @@ def find_elements_cv(img: MatLike, include_root: bool = True) -> tuple[list[Boun
         x.parent.bb.abs_height() < 100 and x.parent.bb.abs_width() < 100), dilated)
     # Filter out hole elements
     root.filter_nodes(lambda x: 10 < cv2.minAreaRect(x.contour)[2] < 80 and not (0.5 < x.bb.aspect_ratio() < 1.5), dilated)
-    root.filter_nodes(lambda x: cv2.contourArea(cv2.convexHull(x.contour), False) / x.bb.abs_area() < 0.75 and 2.5 < cv2.minAreaRect(x.contour)[2] < 87.5, dilated)
+    root.filter_nodes(lambda x: cv2.contourArea(cv2.convexHull(x.contour), False) / x.bb.abs_area()
+                      < 0.75 and 2.5 < cv2.minAreaRect(x.contour)[2] < 87.5, dilated)
     root.filter_nodes(lambda x: contour_inside(x.contour, dilated), dilated)
 
     bbs = root.get_bbs()
@@ -234,12 +236,13 @@ def find_elements_cv(img: MatLike, include_root: bool = True) -> tuple[list[Boun
             used.add(t)
             m = b.merge(t)
         merged.append(m)
-    
+
     if not include_root:
         merged.sort(key=lambda x: x.area(), reverse=True)
         return merged[1:], dilated
 
     return merged, dilated
+
 
 if __name__ == "__main__":
     dataset_folder = r"rl\dataset_big"

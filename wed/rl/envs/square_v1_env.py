@@ -1,3 +1,4 @@
+# This file contains the environment used in Section 4.5 containing randomly placed square.
 import gymnasium
 from gymnasium import spaces
 from gymnasium.envs.registration import register
@@ -8,15 +9,16 @@ from cv2.typing import MatLike
 import math
 from random import uniform
 from stable_baselines3.common.env_checker import check_env
-from gymnasium.wrappers import RescaleAction
 
 register(
     id='square-v1',
     entry_point='rl.envs.square_v1_env:SquareEnv'
 )
 
+
 class SquareEnv(gymnasium.Env):
-    metadata = {'render_modes': ['human'], 'render_fps':1} 
+    metadata = {'render_modes': ['human'], 'render_fps': 1}
+
     def __init__(self, height: int = 100, width: int = 100, render_mode=None) -> None:
         super().__init__()
         self.height: int = height
@@ -30,7 +32,7 @@ class SquareEnv(gymnasium.Env):
 
         self.observation_space = spaces.Box(low=0, high=255, shape=(1, height, width), dtype=np.uint8)
 
-    def reset(self, seed = None, options = None):
+    def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         self.steps = 0
 
@@ -48,10 +50,10 @@ class SquareEnv(gymnasium.Env):
             self.render()
 
         return obs, info
-    
+
     def calculate_reward(self, rect: RectF) -> tuple[float, bool]:
         bb = BoundingBox(rect, BoundingBoxType.CENTER)
-        x1, y1, _, _= bb.get_bb_middle()
+        x1, y1, _, _ = bb.get_bb_middle()
         x2, y2, _, _ = self.bb.get_bb_middle()
 
         total_reward = self.bb.iou(bb)
@@ -68,9 +70,6 @@ class SquareEnv(gymnasium.Env):
         stoped = self.steps >= 1
         x, y, w, h = bb.get_rect(self.width, self.height)
 
-        # Uncomment the following line to see the guess
-        #self.img[0][y:y+h, x:x+w] = 120
-
         obs = self.img
         info = {}
 
@@ -78,24 +77,27 @@ class SquareEnv(gymnasium.Env):
             self.render()
 
         return obs, reward, terminated, stoped, info
-    
+
     def render(self):
         cv2.imshow("square-v1 render", self.img[0])
-        cv2.waitKey(0)
+        cv2.waitKey(1)
+
+    def close(self):
+        if self.render_mode == 'human':
+            cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
     env = gymnasium.make('square-v1', render_mode='human')
-    env = RescaleAction(env, -1, 1)
 
     print("check begin")
     check_env(env)
     print("check end")
 
-    obs = env.reset()[0]
-
     for i in range(10):
+        obs = env.reset()[0]
         rand_action = env.action_space.sample()
         print(rand_action)
         obs, reward, terminated, _, _ = env.step(rand_action)
         print(reward, terminated)
+        cv2.waitKey(0)

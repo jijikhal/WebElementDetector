@@ -1,5 +1,14 @@
 from enum import IntEnum
 
+
+class ActionSmall(IntEnum):
+    SHRINK_LEFT = 0
+    SHRINK_RIGHT = 1
+    SHRINK_TOP = 2
+    SHRINK_BOTTOM = 3
+    STOP = 4
+
+
 class Action(IntEnum):
     SHRINK_LEFT = 0
     SHRINK_RIGHT = 1
@@ -10,6 +19,7 @@ class Action(IntEnum):
     SHRINK_TOP_SMALL = 6
     SHRINK_BOTTOM_SMALL = 7
     STOP = 8
+
 
 class ObservationType(IntEnum):
     STATE_IMAGE_ONLY = 0

@@ -1,17 +1,21 @@
 import math
 
+
 def exp_schedule(initial_value: float):
     def func(progress_remaining: float) -> float:
         return math.exp(-2*(1-progress_remaining))*initial_value*0.6
 
     return func
 
-## Taken from rl-zoo
+# Taken from rl-zoo
+
+
 def linear_schedule(initial_value: float):
     def func(progress_remaining: float) -> float:
         return progress_remaining * initial_value
 
     return func
+
 
 def custom_schedule(initial_value: float):
     def func(progress_remaining: float) -> float:
